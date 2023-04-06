@@ -5,28 +5,25 @@ const PDFPaser = require('./pdf-paser');
 
 
 /*
- * PDFFileHandler
+ * PDFHandler
  */
-function PDFFileHandler(file) {
+function PDFHandler(file) {
     this.paser = PDFPaser.fromFile(file);
+    this.init()
 };
-const PDFFileHandler_proto = PDFFileHandler.prototype;
+const PDFHandler_proto = PDFHandler.prototype;
 
-PDFFileHandler_proto.initXrefTable = function() {
-
+PDFHandler_proto.init = function() {
+    this.header = this.paser.parsePDFHeader();
+    this.xref = this.paser.parsePDFHeader();
 }
 
-var pdf = new PDFFileHandler('./tmpl_page2.pdf')
+
+var pdf = new PDFHandler('./tmpl_page2.pdf')
 
 // console.log(pdf);
 // pdf.paser.readLine()
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
-console.log(pdf.paser.readLine().toString());
+console.log(pdf);
 
 // const nodeBuffer = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 // console.log(nodeBuffer.byteOffset)
