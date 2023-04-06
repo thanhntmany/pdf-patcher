@@ -1,24 +1,25 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
+const PDFPaser = require('./pdf-paser');
 
 
+/*
+ * PDFFileHandler
+ */
 function PDFFileHandler(file) {
-    this.rawBuffer = Fs.readFileSync(file)
+    this.paser = PDFPaser.fromFile(file);
 };
 const PDFFileHandler_proto = PDFFileHandler.prototype;
 
+PDFFileHandler_proto.initXrefTable = function() {
+    
+}
 
-var x = new PDFFileHandler('./tmpl_page2.pdf')
+var pdf = new PDFFileHandler('./tmpl_page2.pdf')
 
-
-var y = Buffer.from(x.rawBuffer.buffer, x.rawBuffer.byteOffset + 131100, 80)
-
-// console.log(x.rawBuffer.byteOffset);
-console.log(y);
-console.log(y.toString());
-console.log(x.rawBuffer.length);
-console.log(x.rawBuffer.buffer);
+console.log(pdf);
+console.log(pdf.paser.viewBytesFrom(130127, 20).toString());
 
 // const nodeBuffer = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 // console.log(nodeBuffer.byteOffset)
