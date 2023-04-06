@@ -13,13 +13,20 @@ function PDFFileHandler(file) {
 const PDFFileHandler_proto = PDFFileHandler.prototype;
 
 PDFFileHandler_proto.initXrefTable = function() {
-    
+
 }
 
 var pdf = new PDFFileHandler('./tmpl_page2.pdf')
 
-console.log(pdf);
-console.log(pdf.paser.viewBytesFrom(130127, 20).toString());
+// console.log(pdf);
+// pdf.paser.readLine()
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
+console.log(pdf.paser.readLine().toString());
 
 // const nodeBuffer = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 // console.log(nodeBuffer.byteOffset)
