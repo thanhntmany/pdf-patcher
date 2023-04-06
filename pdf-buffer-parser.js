@@ -12,7 +12,11 @@ const BASE_ENCODE = 'ascii',
     ASCII_SPACE = 32,
     EOF_MARKER = Buffer.from('%%EOF', BASE_ENCODE),
     STARTXREF = Buffer.from('startxref', BASE_ENCODE),
-    PERCENT_SIGN = Buffer.from('%', BASE_ENCODE);
+    PERCENT_SIGN = Buffer.from('%', BASE_ENCODE),
+    LESS_THAN_SIGN = Buffer.from('<', BASE_ENCODE),
+    GREATER_THAN_SIGN = Buffer.from('>', BASE_ENCODE),
+    DOUBLE_LESS_THAN_SIGN = Buffer.from('<<', BASE_ENCODE),
+    DOUBLE_GREATER_THAN_SIGN = Buffer.from('>>', BASE_ENCODE);
 
 /*
  * PDFparser
@@ -30,25 +34,25 @@ PDFparser.fromFile = function (file) {
     return new PDFparser(Fs.readFileSync(file));
 };
 
-const PDFparser_proto = PDFparser.prototype;
+const _proto = PDFparser.prototype;
 
 
 /*
  * Base operations
  */
-PDFparser_proto.resetPointer = function (byteOffset) {
+_proto.resetPointer = function (byteOffset) {
     this.pointer = byteOffset || 0;
 };
 
-PDFparser_proto.sub = function (start, end) {
+_proto.sub = function (start, end) {
     return this.buf.subarray(start, end);
 };
 
-PDFparser_proto.subFrom = function (start, length) {
+_proto.subFrom = function (start, length) {
     return this.buf.subarray(start, start + length);
 };
 
-PDFparser_proto.indexOfNextLine = function (byteOffset) {
+_proto.indexOfNextLine = function (byteOffset) {
     var p = isNaN(byteOffset) ? this.pointer : byteOffset, l = this.buf.length;
     if (p >= l) return l;
 
@@ -64,12 +68,12 @@ PDFparser_proto.indexOfNextLine = function (byteOffset) {
     return l;
 };
 
-PDFparser_proto.readLine = function (byteOffset) {
+_proto.readLine = function (byteOffset) {
     var p = isNaN(byteOffset) ? this.pointer : byteOffset;
     return this.sub(p, (this.pointer = this.indexOfNextLine(p)));
 };
 
-PDFparser_proto.isWhitespace = function (o) {
+_proto.isWhitespace = function (o) {
     return o === ASCII_NULL
         || o === ASCII_HT
         || o === ASCII_LF
@@ -78,7 +82,7 @@ PDFparser_proto.isWhitespace = function (o) {
         || o === ASCII_SPACE
 }
 
-PDFparser_proto.skipSpaces = function (byteOffset) {
+_proto.skipSpaces = function (byteOffset) {
     var p = isNaN(byteOffset) ? this.pointer : byteOffset, buf = this.buf, o, l = buf.length;
 
     while (p < l) {
@@ -106,13 +110,19 @@ PDFparser_proto.skipSpaces = function (byteOffset) {
  */
 
 
+_proto.parseDictionary = function(byteOffset) {
+    var p = this.buf.indexOf(DOUBLE_LESS_THAN_SIGN, byteOffset);
+    p = this.skipSpaces(p);
+    // XXXXXXXXXXXXXXXXXXxx
+}
+
+
 
 /*
  * Main operations
  */
-
 const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
-PDFparser_proto.parseHeader = function () {
+_proto.parseHeader = function () {
     var p = this.buf.indexOf(PDF_HEADER);
     var header = this.sub(p, this.indexOfNextLine(p)).toString().replace(/^\s+|\s+$/g, "");
     var tokens = header.match(/\d+/g);
@@ -122,19 +132,20 @@ PDFparser_proto.parseHeader = function () {
     };
 };
 
-PDFparser_proto.parseStartXref = function (byteOffset) {
+_proto.parseStartXref = function (byteOffset) {
     var pEOF = this.buf.lastIndexOf(EOF_MARKER, byteOffset || -1);
     var pSTARTXREF = this.buf.lastIndexOf(STARTXREF, pEOF);
     return parseInt(this.readLine(this.indexOfNextLine(pSTARTXREF)).toString());
 };
 
-PDFparser_proto.parseXrefBuf = function () {
+_proto.parseXrefBuf = function () {
 
 };
 
-PDFparser_proto.parseXref = function () {
+_proto.parseXref = function () {
 
 };
 
+// #TODO: extract parsing procedure outof main operations
 
 module.exports = exports = PDFparser
