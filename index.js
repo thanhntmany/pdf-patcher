@@ -6,15 +6,17 @@ const PDFParser = require('./pdf-buffer-parser');
 
 
 var sample = `
-The following are valid literal strings:
-(This is a string)
-(Strings may contain newlines
-and such .)
-(Strings may contain balanced parentheses () and
-special characters (* ! & } ^ % and so on) .)
-(The following is an empty string .)
-()
-(It has zero (0) length .)
+/Name1
+/ASomewhatLongerName
+/A;Name_With-Various***Characters?
+/1.2
+/$$
+/@pattern
+/.notdef
+/lime#20Green
+/paired#28#29parentheses
+/The_Key_of_F#23_Minor
+/A#42
 `;
 
 var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
@@ -22,7 +24,7 @@ var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
 
 var i, l = pdf.randomAccess.buf.length, v;
 for (i = 0; i < l; i++) {
-   v = pdf.randomAccess.setP(i).parseString();
+   v = pdf.randomAccess.setP(i).parseName();
    if (typeof v === 'string' || v instanceof String) console.log(i + " --> " + v);
 };
 

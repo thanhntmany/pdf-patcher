@@ -263,8 +263,45 @@ RA_proto.parseString = function () {
     return null;
 };
 
-RA_proto.parseName = function () {
 
+function isEndOfName(o) {
+    return o === undefined
+        || o === ASCII_SPACE
+        || o === ASCII_HT
+        || o === ASCII_LF
+        || o === ASCII_CR
+        || o === ASCII_FF
+        || o === ASCII_NULL
+        || o === LEFT_PARENTHESIS
+        || o === RIGHT_PARENTHESIS
+        || o === LESS_THAN_SIGN
+        || o === GREATER_THAN_SIGN
+        || o === LEFT_SQUARE_BRACKET
+        || o === RIGHT_SQUARE_BRACKET
+        || o === SOLIDUS
+        || o === PERCENT_SIGN;
+};
+
+RA_proto.parseName = function () {
+    var p = this.p, buf = this.buf, o = buf[p++];
+    if (o !== SOLIDUS) return undefined;
+
+    var t = [];
+    do {
+        o = buf[p]; if (isEndOfName(o)) break;
+
+        if (o === NUMBER_SIGN) {
+            o = Buffer.from(buf.subarray(p + 1, p + 3).toString(BASE_ENCODE), 'hex')[0];
+            p += 2
+        };
+
+        t.push(o);
+        p++;
+    }
+    while (true);
+
+    this.p = p;
+    return Buffer.from(t).toString();
 };
 
 // Names
