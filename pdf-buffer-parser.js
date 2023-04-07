@@ -17,6 +17,7 @@ const BASE_ENCODE = 'ascii',
     ASCII_t = Buffer.from('t', BASE_ENCODE)[0],
     ASCII_b = Buffer.from('b', BASE_ENCODE)[0],
     ASCII_f = Buffer.from('f', BASE_ENCODE)[0],
+    ASCII_R = Buffer.from('R', BASE_ENCODE)[0],
 
     LEFT_PARENTHESIS = Buffer.from('(', BASE_ENCODE)[0],
     RIGHT_PARENTHESIS = Buffer.from(')', BASE_ENCODE)[0],
@@ -32,6 +33,10 @@ const BASE_ENCODE = 'ascii',
     NUMBER_SIGN = Buffer.from('#', BASE_ENCODE)[0],
     DOUBLE_LESS_THAN_SIGN = Buffer.from('<<', BASE_ENCODE),
     DOUBLE_GREATER_THAN_SIGN = Buffer.from('>>', BASE_ENCODE),
+
+    NULL = Buffer.from('null', BASE_ENCODE),
+    TRUE = Buffer.from('true', BASE_ENCODE),
+    FALSE = Buffer.from('false', BASE_ENCODE),
 
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
     STARTXREF = Buffer.from('startxref', BASE_ENCODE),
@@ -51,7 +56,9 @@ const BASE_ENCODE = 'ascii',
     HEX_A = Buffer.from('A', BASE_ENCODE)[0],
     HEX_Z = Buffer.from('Z', BASE_ENCODE)[0],
     HEX_a = Buffer.from('a', BASE_ENCODE)[0],
-    HEX_z = Buffer.from('z', BASE_ENCODE)[0]
+    HEX_z = Buffer.from('z', BASE_ENCODE)[0],
+
+    INDIRECT_REFERENCE_KEY = Symbol("R")
     ;
 
 function isSpace(o) {
@@ -76,31 +83,93 @@ function isHexDigit(o) {
     return (HEX_0 <= o && o <= HEX_9) || (HEX_A <= o && o <= HEX_Z) || (HEX_a <= o && o <= HEX_z);
 };
 
+
+/*
+ * PDFIndirectReference
+ */
+function PDFIndirectReference(root, obj_number, gen_number) {
+    this.root = root;
+    this.gen_number = gen_number || 0;
+    this.obj_number = obj_number;
+};
+
+PDFIndirectReference.prototype.toJSON = function () {
+    return this.root.getObject(this.obj_number, this.gen_number);
+};
+
+PDFIndirectReference.prototype.toString = function () {
+    return String(this.obj_number) + " " + String(this.gen_number) + " R";
+};
+
 /*
  * PDFRandomAccess
  */
 function PDFRandomAccess(buffer) {
     this.buf = Buffer.from(buffer);
-    this.p = 0;// pointer
-    this.cache = {};
+
+    this.xref = {}; // obj_number/gen_number/{offset: ##, state: f/n}
+    this.cacheObj = {};
+
+    this.loadXref();
 };
 const RA_proto = PDFRandomAccess.prototype;
 
-RA_proto.sub = function (start, end) {
-    return this.buf.subarray(start, end);
+RA_proto.loadXref = function() {
+    // #TODO: XXXXXXXXXXXXXXXXXXXX
 };
 
-RA_proto.subFrom = function (start, length) {
-    return this.buf.subarray(start, start + length);
+RA_proto.loadIndirectObjectAtOffset = function(offset) {
+    // #TODO: XXXXXXXXXXXXXXXXXXXX
 };
+
+RA_proto.loadIndirectObject = function (obj_number, gen_number) {
+    var entry = this.xref[obj_number][gen_number];
+
+    if (!this.xref.hasOwnProperty(obj_number)) return undefined;
+    entry = this.xref[obj_number];
+
+    if (!entry.hasOwnProperty(gen_number)) return undefined;
+    entry = entry[gen_number];
+
+    if (entry.state === 'f') return null;
+    if (entry.state === 'n') return this.loadIndirectObjectAtOffset(entry.offset);
+    return undefined;
+};
+
+RA_proto.getObject = function (obj_number, gen_number) {
+    var cacheObj = this.cacheObj, hashKey = String(obj_number) + " " + String(gen_number || 0) + " R"
+    return cacheObj.hasOwnProperty(hashKey) ? cacheObj[hashKey] : cacheObj[hashKey] = this.loadIndirectObject(obj_number, gen_number);
+};
+
+RA_proto.genIndirectReference = function (gen_number, obj_number) {
+    return new PDFIndirectReference(this, obj_number, gen_number);
+};
+
+
+/*
+ * PDFRandomAccessParser
+ */
+function PDFRandomAccessParser(buffer) {
+    this.buf = Buffer.from(buffer);
+    this.p = 0;// pointer
+};
+const RA_parser_proto = PDFRandomAccessParser.prototype;
 
 /* Access Object at byteOffset */
-RA_proto.setP = function (p) {
+RA_parser_proto.setP = function (p) {
     this.p = p;
     return this;
 };
 
-RA_proto.indexOfNextLine = function () {
+RA_parser_proto.sub = function (start, end) {
+    return this.buf.subarray(start, end);
+};
+
+RA_parser_proto.subFrom = function (start, length) {
+    return this.buf.subarray(start, start + length);
+};
+
+RA_parser_proto.indexOfNextLine = function () {
     var p = this.p, l = this.buf.length;
     if (p >= l) return l;
 
@@ -116,12 +185,12 @@ RA_proto.indexOfNextLine = function () {
     return l;
 };
 
-RA_proto.readLine = function () {
+RA_parser_proto.readLine = function () {
     var p = this.p;
     return this.sub(p, (this.p = this.indexOfNextLine()));
 };
 
-RA_proto.skipSpaces = function () {
+RA_parser_proto.skipSpaces = function () {
     var p = this.p, buf = this.buf, o, l = buf.length;
 
     while (p < l) {
@@ -134,9 +203,19 @@ RA_proto.skipSpaces = function () {
     return (this.p = l);
 };
 
+RA_parser_proto.skipExpectedBuf = function (expectedBuf) {
+    var p = this.p, l = expectedBuf.length;
+
+    if (this.subFrom(p, l).compare(expectedBuf) === 0) {
+        this.p += l;
+        return true;
+    };
+
+    return false;
+};
 
 // Parsing Objects
-RA_proto.parseBoolean = function () {
+RA_parser_proto.parseBoolean = function () {
     var p = this.p, buf = this.buf;
     if (BOOL_TRUE.equals(buf.subarray(p, p + BOOL_TRUE.length))) {
         this.p = p + BOOL_TRUE.length;
@@ -149,7 +228,7 @@ RA_proto.parseBoolean = function () {
     return undefined;
 };
 
-RA_proto.parseNumber = function () {
+RA_parser_proto.parseNumber = function () {
     var p = this.p, buf = this.buf, o;
     var num = [];
 
@@ -187,8 +266,7 @@ RA_proto.parseNumber = function () {
     return Number(Buffer.from(num).toString());
 };
 
-
-RA_proto.parseStringLiteral = function () {
+RA_parser_proto.parseStringLiteral = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LEFT_PARENTHESIS) return undefined;
 
@@ -241,7 +319,7 @@ RA_proto.parseStringLiteral = function () {
     return Buffer.from(t).toString();
 };
 
-RA_proto.parseStringHex = function () {
+RA_parser_proto.parseStringHex = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LESS_THAN_SIGN) return null;
 
@@ -255,7 +333,7 @@ RA_proto.parseStringHex = function () {
     return Buffer.from(Buffer.from(t).toString(BASE_ENCODE), 'hex').toString();
 };
 
-RA_proto.parseString = function () {
+RA_parser_proto.parseString = function () {
     var o = this.buf[this.p];
 
     if (o === LESS_THAN_SIGN) return this.parseStringHex();
@@ -282,7 +360,7 @@ function isEndOfName(o) {
         || o === PERCENT_SIGN;
 };
 
-RA_proto.parseName = function () {
+RA_parser_proto.parseName = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== SOLIDUS) return undefined;
 
@@ -304,6 +382,61 @@ RA_proto.parseName = function () {
     return Buffer.from(t).toString();
 };
 
+RA_parser_proto.parseArray = function () {
+    var p = this.p, buf = this.buf, o = buf[p++];
+    if (o !== LEFT_SQUARE_BRACKET) return undefined;
+
+    var out = [], obj;
+    this.skipSpaces();
+    while ((o = buf[p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
+        obj = this.parseObject();
+        if (obj === INDIRECT_REFERENCE_KEY) obj = this.genIndirectReference(out.pop(), out.pop());
+        out.push(obj);
+        this.skipSpaces();
+    };
+
+    return out;
+};
+
+RA_parser_proto.parseDictionary = function () {
+    // #TODO:
+};
+
+RA_parser_proto.parseObject = function () {
+    this.skipSpaces();
+    var p = this.p, buf = this.buf, o = buf[p];
+
+    if (o === undefined) return undefined;
+    switch (o) {
+        case LESS_THAN_SIGN:// << - Dictionary, < - StringHex
+            return buf[p + 1] === LESS_THAN_SIGN ? this.parseDictionary() : this.parseStringHex();
+
+        case LEFT_SQUARE_BRACKET:// [ - Array
+            return this.parseArray();
+
+        case LEFT_PARENTHESIS:// ( - StringLiteral
+            return this.parseStringLiteral();
+
+        case SOLIDUS:// / - Name
+            return this.parseName();
+
+        case ASCII_R:// R - Indirect Reference
+            this.p = p + 1;
+            return INDIRECT_REFERENCE_KEY;
+
+        default:
+            break;
+    };
+
+    if (isDigit(o) || o === MINUS_SIGN || o === DOT_SIGN || o === PLUS_SIGN) return this.parseNumber();
+
+    if (this.skipExpectedBuf(NULL)) return null;
+    if (this.skipExpectedBuf(TRUE)) return true;
+    if (this.skipExpectedBuf(FALSE)) return false;
+
+    return undefined;
+};
+
 // Names
 // Arrays
 // Dictionaries
@@ -315,7 +448,7 @@ RA_proto.parseName = function () {
 * PDFParser
 */
 function PDFParser(buffer) { //https://nodejs.org/api/buffer.html#class-buffer
-    this.randomAccess = new PDFRandomAccess(buffer);
+    this.randomAccess = new PDFRandomAccessParser(buffer);
 };
 
 PDFParser.fromFile = function (file) {
