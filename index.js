@@ -9,21 +9,8 @@ var sample = `
 
 true
 
-false
 
-123
-43445
-+17
--98
-0
-
-34.5
--3.62
-false
-+123.6
-4.
--.002
-0.0
+<4E6F762073686D6F7A206B6120706F702E>
 
 `;
 
@@ -32,8 +19,8 @@ var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
 
 var i, l = pdf.randomAccess.buf.length, v;
 for (i = 0; i < l; i++) {
-   v = pdf.randomAccess.setP(i).parseBoolean();
-   console.log(i + " --> " + pdf.randomAccess.setP(i).parseBoolean());
+   v = pdf.randomAccess.setP(i).parseString();
+   if (v) console.log(i + " --> " + v);
 };
 
 

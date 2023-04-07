@@ -34,9 +34,33 @@ const BASE_ENCODE = 'ascii',
     MINUS_SIGN = Buffer.from('-', BASE_ENCODE)[0],
     DOT_SIGN = Buffer.from('.', BASE_ENCODE)[0],
     DIGIT_0 = Buffer.from('0', BASE_ENCODE)[0],
-    DIGIT_9 = Buffer.from('9', BASE_ENCODE)[0]
+    DIGIT_9 = Buffer.from('9', BASE_ENCODE)[0],
+
+    HEX_0 = Buffer.from('0', BASE_ENCODE)[0],
+    HEX_9 = Buffer.from('9', BASE_ENCODE)[0],
+    HEX_A = Buffer.from('A', BASE_ENCODE)[0],
+    HEX_Z = Buffer.from('Z', BASE_ENCODE)[0],
+    HEX_a = Buffer.from('a', BASE_ENCODE)[0],
+    HEX_z = Buffer.from('z', BASE_ENCODE)[0]
     ;
 
+function isSpace(o) {
+    return o === ASCII_SPACE
+        || o === ASCII_HT
+        || o === ASCII_LF
+        || o === ASCII_CR
+        || o === ASCII_FF
+        || o === ASCII_NULL;
+    // #TODO: run statistics to get the best sorting
+};
+
+function isDigit(o) {
+    return DIGIT_0 <= o && o <= DIGIT_9;
+};
+
+function isHex(o) {
+    return (HEX_0 <= o && o <= HEX_9) || (HEX_A <= o && o <= HEX_Z) || (HEX_a <= o && o <= HEX_z);
+};
 
 /*
  * PDFRandomAccess
@@ -83,23 +107,8 @@ RA_proto.readLine = function () {
     return this.sub(p, (this.p = this.indexOfNextLine()));
 };
 
-RA_proto.isSpace = function (o) {
-    return o === ASCII_SPACE
-        || o === ASCII_HT
-        || o === ASCII_LF
-        || o === ASCII_CR
-        || o === ASCII_FF
-        || o === ASCII_NULL;
-    // #TODO: run statistics to get the best sorting
-};
-
-RA_proto.isDigit = function (o) {
-    return DIGIT_0 <= o && o <= DIGIT_9;
-};
-
-
 RA_proto.skipSpaces = function () {
-    var p = this.p, buf = this.buf, o, l = buf.length, isSpace = this.isSpace;
+    var p = this.p, buf = this.buf, o, l = buf.length;
 
     while (p < l) {
         o = buf[p];
@@ -111,7 +120,8 @@ RA_proto.skipSpaces = function () {
     return (this.p = l);
 };
 
-// 7.3.2 Boolean Objects
+
+// Parsing Objects
 RA_proto.parseBoolean = function () {
     var p = this.p, buf = this.buf;
     if (BOOL_TRUE.equals(buf.subarray(p, p + BOOL_TRUE.length))) {
@@ -125,9 +135,8 @@ RA_proto.parseBoolean = function () {
     return undefined;
 };
 
-// 7.3.3 Numeric Objects
 RA_proto.parseNumber = function () {
-    var p = this.p, buf = this.buf, o, isDigit = this.isDigit;
+    var p = this.p, buf = this.buf, o;
     var num = [];
 
     o = buf[p];
@@ -164,8 +173,33 @@ RA_proto.parseNumber = function () {
     return Number(Buffer.from(num).toString());
 };
 
-// Boolean values
-// Integer and Real numbers
+RA_proto.parseStringLiteral = function () {
+    var p = this.p, buf = this.buf,
+        o = buf[p];
+
+    if (o !== LEFT_PARENTHESIS) return null;
+
+    return null;
+};
+
+RA_proto.parseStringHex = function () {
+    var p = this.p, buf = this.buf, o = buf[p];
+
+    if (o !== LESS_THAN_SIGN) return null;
+    var start = ++p, end = buf.indexOf(GREATER_THAN_SIGN, p);
+    this.p = end + 1;
+    return Buffer.from(this.sub(start, end).toString(BASE_ENCODE), 'hex').toString();
+};
+
+
+RA_proto.parseString = function () {
+    var o = this.buf[this.p];
+
+    if (o === LESS_THAN_SIGN) return this.parseStringHex();
+    else if (o === LEFT_PARENTHESIS) return this.parseStringLiteral();
+    return null;
+};
+
 // Strings, Names
 // Arrays
 // Dictionaries
