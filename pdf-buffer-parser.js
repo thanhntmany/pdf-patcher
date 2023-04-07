@@ -184,13 +184,17 @@ RA_proto.parseStringLiteral = function () {
 
 RA_proto.parseStringHex = function () {
     var p = this.p, buf = this.buf, o = buf[p];
-
     if (o !== LESS_THAN_SIGN) return null;
-    var start = ++p, end = buf.indexOf(GREATER_THAN_SIGN, p);
-    this.p = end + 1;
-    return Buffer.from(this.sub(start, end).toString(BASE_ENCODE), 'hex').toString();
-};
 
+    var t = [];
+    do {
+        if (isHex(o = buf[++p])) t.push(o);
+    }
+    while (o !== GREATER_THAN_SIGN);
+
+    this.p = p;
+    return Buffer.from(Buffer.from(t).toString(BASE_ENCODE), 'hex').toString();
+};
 
 RA_proto.parseString = function () {
     var o = this.buf[this.p];
