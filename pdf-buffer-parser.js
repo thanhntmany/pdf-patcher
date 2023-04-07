@@ -237,6 +237,7 @@ RA_proto.parseStringLiteral = function () {
         o = buf[p++];
     };
 
+    this.p = p;
     return Buffer.from(t).toString();
 };
 
@@ -262,7 +263,11 @@ RA_proto.parseString = function () {
     return null;
 };
 
-// Strings, Names
+RA_proto.parseName = function () {
+
+};
+
+// Names
 // Arrays
 // Dictionaries
 // Streams

@@ -6,7 +6,15 @@ const PDFParser = require('./pdf-buffer-parser');
 
 
 var sample = `
-(This string contains \\0053two octal characters\\053.)
+The following are valid literal strings:
+(This is a string)
+(Strings may contain newlines
+and such .)
+(Strings may contain balanced parentheses () and
+special characters (* ! & } ^ % and so on) .)
+(The following is an empty string .)
+()
+(It has zero (0) length .)
 `;
 
 var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
@@ -15,7 +23,7 @@ var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
 var i, l = pdf.randomAccess.buf.length, v;
 for (i = 0; i < l; i++) {
    v = pdf.randomAccess.setP(i).parseString();
-   console.log(i + " --> " + v);
+   if (typeof v === 'string' || v instanceof String) console.log(i + " --> " + v);
 };
 
 // const nodeBuffer = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
