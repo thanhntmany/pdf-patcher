@@ -215,12 +215,12 @@ RA_proto.parseStringLiteral = function () {
                 default:
                     if (isOctalDigit(o)) {
                         ddd = [o];
-                        if (isOctalDigit(o = buf[p++])) {
-                            ddd.push(o);
-                            if (isOctalDigit(o = buf[p++])) {
-                                ddd.push(o);
-                            } else p--;
-                        } else p--;
+                        if (isOctalDigit(o = buf[p])) {
+                            ddd.push(o); p++;
+                            if (isOctalDigit(o = buf[p])) {
+                                ddd.push(o); p++;
+                            };
+                        };
                         o = parseInt(Buffer.from(ddd).toString(BASE_ENCODE), 8);
                     };
                     break;
