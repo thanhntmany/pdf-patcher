@@ -9,7 +9,15 @@ const BASE_ENCODE = 'ascii',
     ASCII_LF = 10,
     ASCII_FF = 12,
     ASCII_CR = 13,
+    ASCII_BS = 8,
     ASCII_SPACE = 32,
+
+    ASCII_n = Buffer.from('n', BASE_ENCODE)[0],
+    ASCII_r = Buffer.from('r', BASE_ENCODE)[0],
+    ASCII_t = Buffer.from('t', BASE_ENCODE)[0],
+    ASCII_b = Buffer.from('b', BASE_ENCODE)[0],
+    ASCII_f = Buffer.from('f', BASE_ENCODE)[0],
+
     LEFT_PARENTHESIS = Buffer.from('(', BASE_ENCODE)[0],
     RIGHT_PARENTHESIS = Buffer.from(')', BASE_ENCODE)[0],
     LESS_THAN_SIGN = Buffer.from('<', BASE_ENCODE)[0],
@@ -19,6 +27,7 @@ const BASE_ENCODE = 'ascii',
     LEFT_CURLY_BRACKET = Buffer.from('{', BASE_ENCODE)[0],
     RIGHT_CURLY_BRACKET = Buffer.from('}', BASE_ENCODE)[0],
     SOLIDUS = Buffer.from('/', BASE_ENCODE)[0],
+    REVERSE_SOLIDUS = Buffer.from('\\', BASE_ENCODE)[0],
     PERCENT_SIGN = Buffer.from('%', BASE_ENCODE)[0],
     NUMBER_SIGN = Buffer.from('#', BASE_ENCODE)[0],
     DOUBLE_LESS_THAN_SIGN = Buffer.from('<<', BASE_ENCODE),
@@ -34,6 +43,7 @@ const BASE_ENCODE = 'ascii',
     MINUS_SIGN = Buffer.from('-', BASE_ENCODE)[0],
     DOT_SIGN = Buffer.from('.', BASE_ENCODE)[0],
     DIGIT_0 = Buffer.from('0', BASE_ENCODE)[0],
+    DIGIT_7 = Buffer.from('7', BASE_ENCODE)[0],
     DIGIT_9 = Buffer.from('9', BASE_ENCODE)[0],
 
     HEX_0 = Buffer.from('0', BASE_ENCODE)[0],
@@ -58,7 +68,11 @@ function isDigit(o) {
     return DIGIT_0 <= o && o <= DIGIT_9;
 };
 
-function isHex(o) {
+function isOctalDigit(o) {
+    return DIGIT_0 <= o && o <= DIGIT_7;
+};
+
+function isHexDigit(o) {
     return (HEX_0 <= o && o <= HEX_9) || (HEX_A <= o && o <= HEX_Z) || (HEX_a <= o && o <= HEX_z);
 };
 
@@ -173,22 +187,66 @@ RA_proto.parseNumber = function () {
     return Number(Buffer.from(num).toString());
 };
 
+
 RA_proto.parseStringLiteral = function () {
-    var p = this.p, buf = this.buf,
-        o = buf[p];
+    var p = this.p, buf = this.buf, o = buf[p++];
+    if (o !== LEFT_PARENTHESIS) return undefined;
 
-    if (o !== LEFT_PARENTHESIS) return null;
+    var depth = 0, ddd;
+    var t = [];
 
-    return null;
+    o = buf[p++];
+    while (o !== undefined && (o !== RIGHT_PARENTHESIS || depth !== 0)) {
+
+        if (o === REVERSE_SOLIDUS) {
+            switch (o = buf[p++]) {
+                case ASCII_n: o = ASCII_LF; break;
+                case ASCII_r: o = ASCII_CR; break;
+                case ASCII_t: o = ASCII_HT; break;
+                case ASCII_b: o = ASCII_BS; break;
+                case ASCII_f: o = ASCII_FF; break;
+                case LEFT_PARENTHESIS: o = LEFT_PARENTHESIS; break;
+                case RIGHT_PARENTHESIS: o = RIGHT_PARENTHESIS; break;
+                case REVERSE_SOLIDUS: o = REVERSE_SOLIDUS; break;
+                case ASCII_LF:
+                case ASCII_CR:
+                    if (buf[p] === ASCII_LF) p++;
+                    continue;
+                default:
+                    if (isOctalDigit(o)) {
+                        ddd = [o];
+                        if (isOctalDigit(o = buf[p++])) {
+                            ddd.push(o);
+                            if (isOctalDigit(o = buf[p++])) {
+                                ddd.push(o);
+                            } else p--;
+                        } else p--;
+                        o = parseInt(Buffer.from(ddd).toString(BASE_ENCODE), 8);
+                    };
+                    break;
+            };
+        }
+        else if (o === LEFT_PARENTHESIS) {
+            depth++;
+        }
+        else if (o === RIGHT_PARENTHESIS) {
+            depth--;
+        };
+
+        t.push(o);
+        o = buf[p++];
+    };
+
+    return Buffer.from(t).toString();
 };
 
 RA_proto.parseStringHex = function () {
-    var p = this.p, buf = this.buf, o = buf[p];
+    var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LESS_THAN_SIGN) return null;
 
     var t = [];
     do {
-        if (isHex(o = buf[++p])) t.push(o);
+        if (isHexDigit(o = buf[p++])) t.push(o);
     }
     while (o !== GREATER_THAN_SIGN);
 
