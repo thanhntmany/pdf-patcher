@@ -196,6 +196,15 @@ _proto.skipExpectedBuf = function (expectedBuf) {
     return false;
 };
 
+_proto.skipExpectedOct = function (oct) {
+    if (this.buf[this.p] === oct) {
+        this.p += 1;
+        return true;
+    };
+
+    return false;
+};
+
 _proto.readLine = function () {
     return this.sub(this.p, (this.p = this.indexOfNextLine(this.p)));
 };
@@ -365,14 +374,19 @@ _proto.parseName = function () {
 };
 
 _proto.parseArray = function () {
-    if (!this.skipExpectedBuf(LEFT_SQUARE_BRACKET)) return undefined;
+    if (!this.skipExpectedOct(LEFT_SQUARE_BRACKET)) return undefined;
     var buf = this.buf, o,
         stack = [], item;
-    while ((o = buf[this.skipSpaces().p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
+    while ((o = buf[this.skipSpaces().p]) !== undefined) {
+
+        if (o === RIGHT_SQUARE_BRACKET) {
+            this.p++
+            break;
+        };
+
         if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
-
     return stack;
 };
 
@@ -531,9 +545,13 @@ _proto.parseTrailer = function () {
     return this.setP(this.setP(-1).parseStartXref()).parseXref();
 };
 
-// work with Object
 
-_proto.getObjectOffset = function (num, gen) {
+// Work with indirect objects
+_proto.resolve = function (obj) {
+    return obj instanceof IndirectReference ? this.getObject(obj.num, obj.gen) : obj;
+};
+
+_proto.getIndirectObjectOffset = function (num, gen) {
     if (isNaN(gen)) gen = 0;
     var key = this.genXrefObjectKey(num, gen);
 
@@ -550,12 +568,9 @@ _proto.getObjectOffset = function (num, gen) {
 };
 
 _proto.loadObject = function (num, gen) {
-    var offset = this.getObjectOffset(num, gen || 0);
-
-    console.log("offset", offset)
-
+    var offset = this.getIndirectObjectOffset(num, gen || 0);
     if (isNaN(offset)) return undefined;
-    return this.setP(offset).parseIndirectObject();
+    return this.setP(offset).parseIndirectObject().value;
 };
 
 _proto.getObject = function (num, gen) {
