@@ -1,7 +1,7 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-const PDFRandomAccess = require('./pdf-buffer-parser');
+const PDFParser = require('./pdf-buffer-parser');
 
 // var sample = `
 // 0001312 asdasd0 3213654561
@@ -30,5 +30,5 @@ const PDFRandomAccess = require('./pdf-buffer-parser');
 // console.log(buf1.compare(buf2));
 
 
-var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').parser.parseTrailer();
+var pdfra = PDFParser.fromFile('./tmpl_page2.pdf');
 console.dir(pdfra, {depth: null})

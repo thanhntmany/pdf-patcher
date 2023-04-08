@@ -101,8 +101,13 @@ function PDFParser(buffer) {
     this.buf = buffer;
     this.p = 0;// pointer
 
-    this.xref = {}
+    this.xref = this.parseTrailer();
+    this.cache = {};
 };
+PDFParser.fromFile = function (file) {
+    return new this(Fs.readFileSync(file));
+};
+
 const P_proto = PDFParser.prototype;
 
 /* Access Object at byteOffset */
@@ -362,7 +367,7 @@ P_proto.parseArray = function () {
     var buf = this.buf, o,
         stack = [], item;
     while ((o = buf[this.skipSpaces().p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
 
@@ -370,15 +375,12 @@ P_proto.parseArray = function () {
 };
 
 P_proto.parseDictionary = function () {
-    console.log(this.p)
-    console.log(this.sub(this.p, 10).toString())
-    console,log("xxx")
     if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
 
     var buf = this.buf, l = buf.length, p,
         stack = [], item;
     while (!(buf[p = this.skipSpaces().p] === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) && p < l) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
 
@@ -505,8 +507,8 @@ P_proto.parseTrailerObj = function () {
     return this.passTheNext(TRAILER).skipSpaces().parseDictionary();
 };
 
-P_proto.parseXref = function (xrefOffset) {
-    this.setP(xrefOffset);
+P_proto.parseXref = function () {
+    // This.p shall be pointing to xref
     return {
         xrefTable: this.parseXrefTable(),
         trailerObj: this.parseTrailerObj()
@@ -518,83 +520,17 @@ P_proto.parseStartXref = function () {
     return parseInt(this.goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
 };
 
-P_proto.parseTrailer = function (byteOffset) {
-    if (isNaN(byteOffset)) byteOffset = -1;
-    var xrefOffset = this.setP(byteOffset).parseStartXref();
-    var xref = this.parseXref(xrefOffset);
-
-    return {
-        p: xrefOffset,
-        xref: xref
-    }
-    // #TODO: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
+P_proto.parseTrailer = function () {
+    return this.setP(this.setP(-1).parseStartXref()).parseXref();
 };
 
 /*
- * PDFIndirectReference
+ * IndirectReference
  */
-function PDFIndirectReference(gen_number, obj_number) {
+function IndirectReference(gen_number, obj_number) {
     this.gen = gen_number || 0;
     this.num = obj_number;
 };
 
-function PDFIndirectObject(gen_number, obj_number) {
-    this.gen = gen_number || 0;
-    this.num = obj_number;
-};
 
-/*
- * PDFRandomAccess
- */
-function PDFRandomAccess(buffer) {
-    this.buf = Buffer.from(buffer);
-    this.parser = new PDFParser(this.createBufView());
-
-    this.xref = {}; // obj_number-gen_number/{offset: ##, state: f/n}
-    this.cacheObj = {};
-};
-PDFRandomAccess.fromFile = function (file) {
-    return new this(Fs.readFileSync(file));
-};
-
-const RA_proto = PDFRandomAccess.prototype;
-
-RA_proto.createBufView = function (byteOffset, length) {
-    return Buffer.from(this.buf.buffer, this.buf.byteOffset + (byteOffset || 0), length)
-};
-
-RA_proto.loadXref = function (p) {
-    return this.parser.parseXrefTable(this.parser.parseStartXref(p));
-};
-
-RA_proto.loadIndirectObjectAtOffset = function (offset) {
-    // #TODO: XXXXXXXXXXXXXXXXXXXX
-};
-
-RA_proto.loadIndirectObject = function (obj_number, gen_number) {
-    var entry = this.xref[obj_number][gen_number];
-
-    if (!this.xref.hasOwnProperty(obj_number)) return undefined;
-    entry = this.xref[obj_number];
-
-    if (!entry.hasOwnProperty(gen_number)) return undefined;
-    entry = entry[gen_number];
-
-    if (entry.state === 'f') return null;
-    if (entry.state === 'n') return this.loadIndirectObjectAtOffset(entry.offset);
-    return undefined;
-};
-
-RA_proto.getObject = function (obj_number, gen_number) {
-    var cacheObj = this.cacheObj, hashKey = String(obj_number) + " " + String(gen_number || 0) + " R"
-    return cacheObj.hasOwnProperty(hashKey) ? cacheObj[hashKey] : cacheObj[hashKey] = this.loadIndirectObject(obj_number, gen_number);
-};
-
-RA_proto.genIndirectReference = function (gen_number, obj_number) {
-    return new PDFIndirectReference(this, obj_number, gen_number);
-};
-
-
-module.exports = exports = PDFRandomAccess;
-exports.PDFParser = PDFParser;
+module.exports = exports = PDFParser;
