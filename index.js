@@ -3,16 +3,16 @@ const { Buffer } = require('buffer');
 const Fs = require('fs');
 const PDFRandomAccess = require('./pdf-buffer-parser');
 
-var sample = `
-0001312 asdasd0 3213654561
-`;
+// var sample = `
+// 0001312 asdasd0 3213654561
+// `;
 
-var pdf = new PDFRandomAccess.PDFParser(Buffer.from(sample, 'ascii'));
+// var pdf = new PDFRandomAccess.PDFParser(Buffer.from(sample, 'ascii'));
 
-console.log(pdf.buf.toString())
-console.log("---------------")
-pdf.skipSpaces()
-console.log(pdf.passDigits())
+// console.log(pdf.buf.toString())
+// console.log("---------------")
+// pdf.skipSpaces()
+// console.log(pdf.passDigits())
 
 // var i, l = pdf.randomAccess.buf.length, v;
 // for (i = 0; i < l; i++) {
@@ -30,5 +30,5 @@ console.log(pdf.passDigits())
 // console.log(buf1.compare(buf2));
 
 
-// var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').parser.parseTrailer();
-// console.dir(pdfra, {depth: null})
+var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').parser.parseTrailer();
+console.dir(pdfra, {depth: null})

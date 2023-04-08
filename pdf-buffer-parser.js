@@ -2,6 +2,7 @@
 const Os = require('os');
 const { Buffer } = require('buffer');
 const Fs = require('fs');
+const { log } = require('console');
 
 const BASE_ENCODE = 'ascii',
     ASCII_NULL = 0,
@@ -38,10 +39,10 @@ const BASE_ENCODE = 'ascii',
     TRUE = Buffer.from('true', BASE_ENCODE),
     FALSE = Buffer.from('false', BASE_ENCODE),
 
-    STREAM = Buffer.from('stream\n', BASE_ENCODE),
-    ENDSTREAM = Buffer.from('\nendstream', BASE_ENCODE),
     OBJ = Buffer.from('obj\n', BASE_ENCODE),
     ENDOBJ = Buffer.from('\nendobj', BASE_ENCODE),
+    STREAM = Buffer.from('stream\n', BASE_ENCODE),
+    ENDSTREAM = Buffer.from('\nendstream', BASE_ENCODE),
 
     XREF = Buffer.from('xref', BASE_ENCODE),
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
@@ -99,6 +100,8 @@ function isString(o) {
 function PDFParser(buffer) {
     this.buf = buffer;
     this.p = 0;// pointer
+
+    this.xref = {}
 };
 const P_proto = PDFParser.prototype;
 
@@ -367,6 +370,9 @@ P_proto.parseArray = function () {
 };
 
 P_proto.parseDictionary = function () {
+    console.log(this.p)
+    console.log(this.sub(this.p, 10).toString())
+    console,log("xxx")
     if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
 
     var buf = this.buf, l = buf.length, p,
@@ -422,9 +428,10 @@ P_proto.parseStreamObject = function () {
 };
 
 P_proto.parseIndirectObject = function () {
-    var obj_num = this.passDigits();
+    var obj = {};
+    obj.num = this.passDigits();
     this.skipSpaces()
-    var obj_gen = this.passDigits();
+    obj.gen = this.passDigits();
     this.skipSpaces()
 
     if (!this.skipExpectedBuf(OBJ)) {
@@ -432,19 +439,19 @@ P_proto.parseIndirectObject = function () {
     };
     this.skipSpaces()
 
-    if (this.skipExpectedBuf(ENDOBJ)) return {
-        num: obj_num,
-        gen: obj_gen,
-        value: null
+    if (this.skipExpectedBuf(ENDOBJ)) {
+        obj.value = null;
+        return obj;
     };
 
-    var obj_value = this.parseObject();
-    this.skipSpaces()
+    obj.value = this.parseObject();
+    this.skipSpaces();
 
-    if (this.skipExpectedBuf(ENDOBJ)) return {
-    };
-    
-    // #TODO: ###
+    // Stream Objects
+    // #TODO:
+    if (this.skipExpectedBuf(STREAM)) obj.streamStart = this.p;
+
+    return obj;
 };
 
 // Parsing PDF File Structure
@@ -483,7 +490,7 @@ P_proto.parseXrefSubsection = function () {
     return out;
 };
 
-P_proto.parseXref = function () {
+P_proto.parseXrefTable = function () {
     this.goToNext(XREF).goToNextLine();
 
     var out = {};
@@ -495,13 +502,13 @@ P_proto.parseXref = function () {
 };
 
 P_proto.parseTrailerObj = function () {
-    return this.passTheNext(TRAILER).parseDictionary();
+    return this.passTheNext(TRAILER).skipSpaces().parseDictionary();
 };
 
-P_proto.parseIndividualTrailer = function (xrefOffset) {
+P_proto.parseXref = function (xrefOffset) {
     this.setP(xrefOffset);
     return {
-        xref: this.parseXref(),
+        xrefTable: this.parseXrefTable(),
         trailerObj: this.parseTrailerObj()
     }
 };
@@ -514,11 +521,11 @@ P_proto.parseStartXref = function () {
 P_proto.parseTrailer = function (byteOffset) {
     if (isNaN(byteOffset)) byteOffset = -1;
     var xrefOffset = this.setP(byteOffset).parseStartXref();
-    var iTrailer = this.parseIndividualTrailer(xrefOffset);
+    var xref = this.parseXref(xrefOffset);
 
     return {
-        xrefOffset: xrefOffset,
-        iTrailer: iTrailer
+        p: xrefOffset,
+        xref: xref
     }
     // #TODO: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -528,6 +535,11 @@ P_proto.parseTrailer = function (byteOffset) {
  * PDFIndirectReference
  */
 function PDFIndirectReference(gen_number, obj_number) {
+    this.gen = gen_number || 0;
+    this.num = obj_number;
+};
+
+function PDFIndirectObject(gen_number, obj_number) {
     this.gen = gen_number || 0;
     this.num = obj_number;
 };
@@ -553,7 +565,7 @@ RA_proto.createBufView = function (byteOffset, length) {
 };
 
 RA_proto.loadXref = function (p) {
-    return this.parser.parseXref(this.parser.parseStartXref(p));
+    return this.parser.parseXrefTable(this.parser.parseStartXref(p));
 };
 
 RA_proto.loadIndirectObjectAtOffset = function (offset) {
