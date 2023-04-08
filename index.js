@@ -2,7 +2,7 @@
 const { Buffer } = require('buffer');
 const Fs = require('fs');
 const PDFHandler = require('./pdf-handler');
-const PDFParser = require('./pdf-buffer-parser');
+const PDFRandomAccess = require('./pdf-buffer-parser');
 
 
 // var sample = `
@@ -32,7 +32,10 @@ const PDFParser = require('./pdf-buffer-parser');
 // console.log(nodeBuffer.byteOffset)
 // console.log(Buffer.poolSize)
 
-const buf1 = Buffer.from('ABCD');
-const buf2 = Buffer.from('ABC');
+// const buf1 = Buffer.from('ABCD');
+// const buf2 = Buffer.from('ABC');
 
-console.log(buf1.compare(buf2));
+// console.log(buf1.compare(buf2));
+
+
+var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf');
