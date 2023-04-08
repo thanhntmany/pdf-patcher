@@ -353,7 +353,6 @@ P_proto.parseArray = function () {
         stack = [], item;
     while ((o = buf[this.skipSpaces().p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
         if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
-
         stack.push(item);
     };
 
@@ -367,13 +366,11 @@ P_proto.parseDictionary = function () {
         stack = [], item;
     while (!(buf[p = this.skipSpaces().p] === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) && p < l) {
         if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
-
         stack.push(item);
     };
 
     var obj = {};
     while (isString(item = stack.shift())) obj[String(item)] = stack.shift();
-
     return obj;
 }
 
@@ -450,8 +447,8 @@ P_proto.parseXrefSubsection = function () {
     return out;
 };
 
-P_proto.parseXref = function (byteOffset) {
-    this.setP(byteOffset).goToNext(XREF).goToNextLine();
+P_proto.parseXref = function () {
+    this.goToNext(XREF).goToNextLine();
 
     var out = {};
     while (isDigit(this.buf[this.p])) {
@@ -461,12 +458,34 @@ P_proto.parseXref = function (byteOffset) {
     return out;
 };
 
-P_proto.parseTrailer = function (byteOffset) {
-    return this.setP(byteOffset || -1).goToLast(TRAILER).skipSpaces().parseDictionary();
+P_proto.parseTrailerObj = function () {
+    return this.passTheNext(TRAILER).parseDictionary();
 };
 
-P_proto.parseStartXref = function (byteOffset) {
-    return parseInt(this.setP(byteOffset || -1).goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
+P_proto.parseIndividualTrailer = function (xrefOffset) {
+    this.setP(xrefOffset);
+    return {
+        xref: this.parseXref(),
+        trailerObj: this.parseTrailerObj()
+    }
+};
+
+// reverse lookup from this.p
+P_proto.parseStartXref = function () {
+    return parseInt(this.goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
+};
+
+P_proto.parseTrailer = function (byteOffset) {
+    if (isNaN(byteOffset)) byteOffset = -1;
+    var xrefOffset = this.setP(byteOffset).parseStartXref();
+    var iTrailer = this.parseIndividualTrailer(xrefOffset);
+
+    return {
+        xrefOffset: xrefOffset,
+        iTrailer: iTrailer
+    }
+    // #TODO: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 };
 
 /*
