@@ -416,12 +416,10 @@ P_proto.parseObject = function () {
 // Parsing PDF File Structure
 const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
 P_proto.parseHeader = function () {
-    var p = this.buf.indexOf(PDF_HEADER);
-    var header = this.sub(p, this.indexOfNextLine(p)).toString().replace(/^\s+|\s+$/g, "");
-    var tokens = header.match(/\d+/g);
+    var header = this.setP(0).goToNext(PDF_HEADER).readLine().toString().replace(/^\s+|\s+$/g, "");
     return {
         header: header,
-        version: tokens
+        version: header.match(/\d+/g)
     };
 };
 
@@ -469,6 +467,7 @@ PDFIndirectReference.prototype.toString = function () {
  */
 function PDFRandomAccess(buffer) {
     this.buf = Buffer.from(buffer);
+    this.parser = new PDFParser(this.createBufView());
 
     this.xref = {}; // obj_number-gen_number/{offset: ##, state: f/n}
     this.cacheObj = {};
@@ -486,9 +485,7 @@ RA_proto.createBufView = function (byteOffset, length) {
 };
 
 RA_proto.loadXref = function () {
-    var parser = new PDFParser(this.createBufView());
-    var startXref = parser.parseStartXref();
-
+    var startXref = this.parser.parseStartXref();
     console.log("startXref -> ", startXref)
 };
 
@@ -518,7 +515,6 @@ RA_proto.getObject = function (obj_number, gen_number) {
 RA_proto.genIndirectReference = function (gen_number, obj_number) {
     return new PDFIndirectReference(this, obj_number, gen_number);
 };
-
 
 
 module.exports = exports = PDFRandomAccess
