@@ -65,7 +65,9 @@ const BASE_ENCODE = 'ascii',
     HEX_a = Buffer.from('a', BASE_ENCODE)[0],
     HEX_z = Buffer.from('z', BASE_ENCODE)[0],
 
-    INDIRECT_REFERENCE_KEY = Symbol("R")
+    INDIRECT_REFERENCE_KEY = Symbol("R"),
+    INDIRECT_OBJ_INUSE = Symbol("in-use"),
+    INDIRECT_OBJ_FREE = Symbol("free")
     ;
 
 function isSpace(o) {
@@ -108,23 +110,23 @@ PDFParser.fromFile = function (file) {
     return new this(Fs.readFileSync(file));
 };
 
-const P_proto = PDFParser.prototype;
+const _proto = PDFParser.prototype;
 
 /* Access Object at byteOffset */
-P_proto.setP = function (p) {
+_proto.setP = function (p) {
     this.p = isNaN(p) ? 0 : p;
     return this;
 };
 
-P_proto.sub = function (start, end) {
+_proto.sub = function (start, end) {
     return this.buf.subarray(start, end);
 };
 
-P_proto.subFrom = function (start, length) {
+_proto.subFrom = function (start, length) {
     return this.buf.subarray(start, start + length);
 };
 
-P_proto.indexOfNextLine = function (p) {
+_proto.indexOfNextLine = function (p) {
     if (isNaN(p)) p = this.p;
 
     var buf = this.buf, l = buf.length, o;
@@ -141,7 +143,7 @@ P_proto.indexOfNextLine = function (p) {
 };
 
 /* ==== work with "p" property ==== */
-P_proto.skipSpaces = function () {
+_proto.skipSpaces = function () {
     var p = this.p, buf = this.buf, o, l = buf.length;
     while (p < l) {
         o = buf[p];
@@ -156,34 +158,34 @@ P_proto.skipSpaces = function () {
     return this;
 };
 
-P_proto.goToLast = function (expectedBuf) {
+_proto.goToLast = function (expectedBuf) {
     this.p = this.buf.lastIndexOf(expectedBuf, this.p);
     return this;
 };
 
-P_proto.goToNext = function (expectedBuf) {
+_proto.goToNext = function (expectedBuf) {
     this.p = this.buf.indexOf(expectedBuf, this.p);
     return this;
 };
 
-P_proto.passTheNext = function (expectedBuf) {
+_proto.passTheNext = function (expectedBuf) {
     this.p = this.buf.indexOf(expectedBuf, this.p);
     if (this.p >= 0) this.p += expectedBuf.length;
     return this;
 };
 
-P_proto.passDigits = function () {
+_proto.passDigits = function () {
     var buf = this.buf, p = this.p, start = p;
     while (isDigit(buf[p++])) { };
     return parseInt(this.sub(start, (this.p = p)).toString());
 };
 
-P_proto.goToNextLine = function () {
+_proto.goToNextLine = function () {
     this.p = this.indexOfNextLine(this.p)
     return this;
 };
 
-P_proto.skipExpectedBuf = function (expectedBuf) {
+_proto.skipExpectedBuf = function (expectedBuf) {
     var p = this.p, l = expectedBuf.length;
 
     if (this.subFrom(p, l).compare(expectedBuf) === 0) {
@@ -194,12 +196,12 @@ P_proto.skipExpectedBuf = function (expectedBuf) {
     return false;
 };
 
-P_proto.readLine = function () {
+_proto.readLine = function () {
     return this.sub(this.p, (this.p = this.indexOfNextLine(this.p)));
 };
 
 // Parsing Objects
-P_proto.parseBoolean = function () {
+_proto.parseBoolean = function () {
     var p = this.p, buf = this.buf;
     if (BOOL_TRUE.equals(buf.subarray(p, p + BOOL_TRUE.length))) {
         this.p = p + BOOL_TRUE.length;
@@ -212,7 +214,7 @@ P_proto.parseBoolean = function () {
     return undefined;
 };
 
-P_proto.parseNumber = function () {
+_proto.parseNumber = function () {
     var p = this.p, buf = this.buf, o;
     var num = [];
 
@@ -246,7 +248,7 @@ P_proto.parseNumber = function () {
     return Number(Buffer.from(num).toString());
 };
 
-P_proto.parseStringLiteral = function () {
+_proto.parseStringLiteral = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LEFT_PARENTHESIS) return undefined;
 
@@ -299,7 +301,7 @@ P_proto.parseStringLiteral = function () {
     return Buffer.from(t).toString();
 };
 
-P_proto.parseStringHex = function () {
+_proto.parseStringHex = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LESS_THAN_SIGN) return null;
 
@@ -313,7 +315,7 @@ P_proto.parseStringHex = function () {
     return Buffer.from(Buffer.from(t).toString(BASE_ENCODE), 'hex').toString();
 };
 
-P_proto.parseString = function () {
+_proto.parseString = function () {
     var o = this.buf[this.p];
 
     if (o === LESS_THAN_SIGN) return this.parseStringHex();
@@ -340,7 +342,7 @@ function isEndOfName(o) {
         || o === PERCENT_SIGN;
 };
 
-P_proto.parseName = function () {
+_proto.parseName = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== SOLIDUS) return undefined;
 
@@ -362,7 +364,7 @@ P_proto.parseName = function () {
     return Buffer.from(t).toString();
 };
 
-P_proto.parseArray = function () {
+_proto.parseArray = function () {
     if (!this.skipExpectedBuf(LEFT_SQUARE_BRACKET)) return undefined;
     var buf = this.buf, o,
         stack = [], item;
@@ -374,7 +376,7 @@ P_proto.parseArray = function () {
     return stack;
 };
 
-P_proto.parseDictionary = function () {
+_proto.parseDictionary = function () {
     if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
 
     var buf = this.buf, l = buf.length, p,
@@ -389,7 +391,7 @@ P_proto.parseDictionary = function () {
     return obj;
 }
 
-P_proto.parseObject = function () {
+_proto.parseObject = function () {
     var p = this.skipSpaces().p, buf = this.buf, o = buf[p];
     if (o === undefined) return undefined;
     switch (o) {
@@ -425,11 +427,11 @@ P_proto.parseObject = function () {
     return undefined;
 };
 
-P_proto.parseStreamObject = function () {
+_proto.parseStreamObject = function () {
     // #TODO: ###
 };
 
-P_proto.parseIndirectObject = function () {
+_proto.parseIndirectObject = function () {
     var obj = {};
     obj.num = this.passDigits();
     this.skipSpaces()
@@ -458,7 +460,7 @@ P_proto.parseIndirectObject = function () {
 
 // Parsing PDF File Structure
 const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
-P_proto.parseHeader = function () {
+_proto.parseHeader = function () {
     var header = this.setP(0).goToNext(PDF_HEADER).readLine().toString().replace(/^\s+|\s+$/g, "");
     return {
         header: header,
@@ -466,24 +468,28 @@ P_proto.parseHeader = function () {
     };
 };
 
+_proto.genXrefObjectKey = function (num, gen) {
+    return String(num) + "-" + String(gen)
+};
+
 const XREFSUBSECTION_SPLIT_REGEX = /\s/g;
-P_proto.parseXrefSubsection = function () {
+_proto.parseXrefSubsection = function () {
     var out = {}, key,
         tks = this.readLine().toString().split(XREFSUBSECTION_SPLIT_REGEX),
         start = parseInt(tks.shift()), end = start + parseInt(tks.shift()), i;
 
     for (i = start; i < end; i++) {
         tks = this.readLine().toString().split(XREFSUBSECTION_SPLIT_REGEX);
-        key = String(i) + "-" + String(parseInt(tks[1]))
+        key = this.genXrefObjectKey(i, parseInt(tks[1]));
         if (tks[2] === 'f') {
             out[key] = {
-                status: "free",
+                status: INDIRECT_OBJ_FREE,
                 nextFreeObjNo: parseInt(tks[0])
             };
         }
         else if (tks[2] === 'n') {
             out[key] = {
-                status: "in-use",
+                status: INDIRECT_OBJ_INUSE,
                 p: parseInt(tks[0])
             };
         };
@@ -492,7 +498,7 @@ P_proto.parseXrefSubsection = function () {
     return out;
 };
 
-P_proto.parseXrefTable = function () {
+_proto.parseXrefTable = function () {
     this.goToNext(XREF).goToNextLine();
 
     var out = {};
@@ -503,11 +509,11 @@ P_proto.parseXrefTable = function () {
     return out;
 };
 
-P_proto.parseTrailerObj = function () {
+_proto.parseTrailerObj = function () {
     return this.passTheNext(TRAILER).skipSpaces().parseDictionary();
 };
 
-P_proto.parseXref = function () {
+_proto.parseXref = function () {
     // This.p shall be pointing to xref
     return {
         xrefTable: this.parseXrefTable(),
@@ -516,13 +522,21 @@ P_proto.parseXref = function () {
 };
 
 // reverse lookup from this.p
-P_proto.parseStartXref = function () {
+_proto.parseStartXref = function () {
     return parseInt(this.goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
 };
 
-P_proto.parseTrailer = function () {
+_proto.parseTrailer = function () {
     return this.setP(this.setP(-1).parseStartXref()).parseXref();
 };
+
+// work with Object
+_proto.getObject = function (num, gen) {
+    if (isNaN(gen)) gen = 0;
+    var key = this.genXrefObjectKey(num, gen);
+
+};
+
 
 /*
  * IndirectReference
