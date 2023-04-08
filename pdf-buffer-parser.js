@@ -84,6 +84,9 @@ function isHexDigit(o) {
     return (HEX_0 <= o && o <= HEX_9) || (HEX_A <= o && o <= HEX_Z) || (HEX_a <= o && o <= HEX_z);
 };
 
+function isString(o) {
+    return typeof o === 'string' || o instanceof String
+}
 
 /*
  * PDFParser
@@ -130,10 +133,14 @@ P_proto.skipSpaces = function () {
     while (p < l) {
         o = buf[p];
         if (o === PERCENT_SIGN) p = this.indexOfNextLine(p); // Skip comment
-        if (!isSpace(o)) return (this.p = p);
+        if (!isSpace(o)) {
+            this.p = p;
+            return this;
+        };
         p++;
     };
-    return (this.p = l);
+    this.p = l
+    return this;
 };
 
 P_proto.goToLast = function (expectedBuf) {
@@ -143,6 +150,12 @@ P_proto.goToLast = function (expectedBuf) {
 
 P_proto.goToNext = function (expectedBuf) {
     this.p = this.buf.indexOf(expectedBuf, this.p);
+    return this;
+};
+
+P_proto.passTheNext = function (expectedBuf) {
+    this.p = this.buf.indexOf(expectedBuf, this.p);
+    if (this.p >= 0) this.p += expectedBuf.length;
     return this;
 };
 
@@ -335,52 +348,37 @@ P_proto.parseName = function () {
 };
 
 P_proto.parseArray = function () {
-    var p = this.p, buf = this.buf, o = buf[p++];
-    if (o !== LEFT_SQUARE_BRACKET) return undefined;
+    if (this.passTheNext(LEFT_SQUARE_BRACKET).p < 0) return undefined;
+    var buf = this.buf, o,
+        stack = [], item;
+    while ((o = buf[this.skipSpaces().p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
 
-    var out = [], obj;
-    this.skipSpaces();
-    while ((o = buf[p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
-        obj = this.parseObject();
-        if (obj === INDIRECT_REFERENCE_KEY) obj = this.genIndirectReference(out.pop(), out.pop());
-        out.push(obj);
-        this.skipSpaces();
+        stack.push(item);
     };
 
-    return out;
-};
-
-P_proto.parseDictionaryNameValuePair = function (obj) {
-    var key = this.parseName();
-    // #TODO:
+    return stack;
 };
 
 P_proto.parseDictionary = function () {
-    var buf = this.buf, p = buf.indexOf(DOUBLE_LESS_THAN_SIGN, this.p), o;
+    if (this.passTheNext(DOUBLE_LESS_THAN_SIGN).p < 0) return undefined;
+
+    var buf = this.buf, l = buf.length, p,
+        stack = [], item;
+    while (!(buf[p = this.skipSpaces().p] === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) && p < l) {
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new PDFIndirectReference(stack.pop(), stack.pop());
+
+        stack.push(item);
+    };
+
     var obj = {};
-
-    while (true) {
-        p = this.skipSpaces(p);
-        o = buf[p];
-        if (o === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) break;
-
-        if (o === SOLIDUS) {
-            this.parseDictionaryNameValuePair(obj)
-        }
-        else {
-            console.error("Invalid dictionary, found: '" + String(o) + "' but expected: '/' at offset " + String(p));
-        };
-
-        p++;
-    }
+    while (isString(item = stack.shift())) obj[String(item)] = stack.shift();
 
     return obj;
 }
 
 P_proto.parseObject = function () {
-    this.skipSpaces();
-    var p = this.p, buf = this.buf, o = buf[p];
-
+    var p = this.skipSpaces().p, buf = this.buf, o = buf[p];
     if (o === undefined) return undefined;
     switch (o) {
         case LESS_THAN_SIGN:// << - Dictionary, < - StringHex
@@ -396,8 +394,11 @@ P_proto.parseObject = function () {
             return this.parseName();
 
         case ASCII_R:// R - Indirect Reference
-            this.p = p + 1;
-            return INDIRECT_REFERENCE_KEY;
+            if (buf[p + 1] !== ASCII_R) {
+                this.p = p + 1;
+                return INDIRECT_REFERENCE_KEY;
+            };
+            break;
 
         default:
             break;
@@ -471,20 +472,10 @@ P_proto.parseStartXref = function (byteOffset) {
 /*
  * PDFIndirectReference
  */
-function PDFIndirectReference(root, obj_number, gen_number) {
-    this.root = root;
+function PDFIndirectReference(gen_number, obj_number) {
     this.gen_number = gen_number || 0;
     this.obj_number = obj_number;
 };
-
-PDFIndirectReference.prototype.toJSON = function () {
-    return this.root.getObject(this.obj_number, this.gen_number);
-};
-
-PDFIndirectReference.prototype.toString = function () {
-    return String(this.obj_number) + " " + String(this.gen_number) + " R";
-};
-
 
 /*
  * PDFRandomAccess
@@ -538,4 +529,5 @@ RA_proto.genIndirectReference = function (gen_number, obj_number) {
 };
 
 
-module.exports = exports = PDFRandomAccess
+module.exports = exports = PDFRandomAccess;
+exports.PDFParser = PDFParser;

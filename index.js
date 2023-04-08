@@ -1,26 +1,21 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-const PDFHandler = require('./pdf-handler');
 const PDFRandomAccess = require('./pdf-buffer-parser');
 
+var sample = `
+<<
+/Info 46 0 R
+/Root 1 0 R
+/Size 47
+>>
+`;
 
-// var sample = `
-// /Name1
-// /ASomewhatLongerName
-// /A;Name_With-Various***Characters?
-// /1.2
-// /$$
-// /@pattern
-// /.notdef
-// /lime#20Green
-// /paired#28#29parentheses
-// /The_Key_of_F#23_Minor
-// /A#42
-// `;
+var pdf = new PDFRandomAccess.PDFParser(Buffer.from(sample, 'ascii'));
 
-// var pdf = new PDFParser(Buffer.from(sample, 'ascii'));
-
+console.log(pdf.buf.toString())
+console.log("---------------")
+console.log(pdf.parseDictionary())
 
 // var i, l = pdf.randomAccess.buf.length, v;
 // for (i = 0; i < l; i++) {
@@ -38,6 +33,5 @@ const PDFRandomAccess = require('./pdf-buffer-parser');
 // console.log(buf1.compare(buf2));
 
 
-var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').loadXref();
-
-console.log(pdfra)
+// var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').loadXref();
+// console.log(pdfra)
