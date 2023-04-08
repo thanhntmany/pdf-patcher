@@ -86,33 +86,33 @@ function isHexDigit(o) {
 
 
 /*
- * PDFRandomAccessParser
+ * PDFParser
  */
-function PDFRandomAccessParser(buffer) {
-    this.buf = Buffer.from(buffer);
+function PDFParser(buffer) {
+    this.buf = buffer;
     this.p = 0;// pointer
 };
-const RA_parser_proto = PDFRandomAccessParser.prototype;
+const P_proto = PDFParser.prototype;
 
 /* Access Object at byteOffset */
-RA_parser_proto.setP = function (p) {
-    this.p = p;
+P_proto.setP = function (p) {
+    this.p = isNaN(p) ? 0 : p;
     return this;
 };
 
-RA_parser_proto.sub = function (start, end) {
+P_proto.sub = function (start, end) {
     return this.buf.subarray(start, end);
 };
 
-RA_parser_proto.subFrom = function (start, length) {
+P_proto.subFrom = function (start, length) {
     return this.buf.subarray(start, start + length);
 };
 
-RA_parser_proto.indexOfNextLine = function () {
-    var p = this.p, l = this.buf.length;
-    if (p >= l) return l;
+P_proto.indexOfNextLine = function (p) {
+    if (isNaN(p)) p = this.p;
 
-    var buf = this.buf, o; while (p < l) {
+    var buf = this.buf, l = buf.length, o;
+    while (p < l) {
         if ((o = buf[p]) === ASCII_LF) return p + 1;// LF
         if (o === ASCII_CR) {
             if (buf[p + 1] === ASCII_LF) return p + 2;// CR LF
@@ -124,25 +124,34 @@ RA_parser_proto.indexOfNextLine = function () {
     return l;
 };
 
-RA_parser_proto.readLine = function () {
-    var p = this.p;
-    return this.sub(p, (this.p = this.indexOfNextLine()));
-};
-
-RA_parser_proto.skipSpaces = function () {
+/* ==== work with "p" property ==== */
+P_proto.skipSpaces = function () {
     var p = this.p, buf = this.buf, o, l = buf.length;
-
     while (p < l) {
         o = buf[p];
-        if (!isSpace(o)) return (this.p = p);
         if (o === PERCENT_SIGN) p = this.indexOfNextLine(p); // Skip comment
+        if (!isSpace(o)) return (this.p = p);
         p++;
     };
-
     return (this.p = l);
 };
 
-RA_parser_proto.skipExpectedBuf = function (expectedBuf) {
+P_proto.goToLast = function (expectedBuf) {
+    this.p = this.buf.lastIndexOf(expectedBuf, this.p);
+    return this;
+};
+
+P_proto.goToNext = function (expectedBuf) {
+    this.p = this.buf.indexOf(expectedBuf, this.p);
+    return this;
+};
+
+P_proto.goToNextLine = function () {
+    this.p = this.indexOfNextLine(this.p)
+    return this;
+};
+
+P_proto.skipExpectedBuf = function (expectedBuf) {
     var p = this.p, l = expectedBuf.length;
 
     if (this.subFrom(p, l).compare(expectedBuf) === 0) {
@@ -153,8 +162,12 @@ RA_parser_proto.skipExpectedBuf = function (expectedBuf) {
     return false;
 };
 
+P_proto.readLine = function () {
+    return this.sub(this.p, (this.p = this.indexOfNextLine(this.p)));
+};
+
 // Parsing Objects
-RA_parser_proto.parseBoolean = function () {
+P_proto.parseBoolean = function () {
     var p = this.p, buf = this.buf;
     if (BOOL_TRUE.equals(buf.subarray(p, p + BOOL_TRUE.length))) {
         this.p = p + BOOL_TRUE.length;
@@ -167,7 +180,7 @@ RA_parser_proto.parseBoolean = function () {
     return undefined;
 };
 
-RA_parser_proto.parseNumber = function () {
+P_proto.parseNumber = function () {
     var p = this.p, buf = this.buf, o;
     var num = [];
 
@@ -205,7 +218,7 @@ RA_parser_proto.parseNumber = function () {
     return Number(Buffer.from(num).toString());
 };
 
-RA_parser_proto.parseStringLiteral = function () {
+P_proto.parseStringLiteral = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LEFT_PARENTHESIS) return undefined;
 
@@ -258,7 +271,7 @@ RA_parser_proto.parseStringLiteral = function () {
     return Buffer.from(t).toString();
 };
 
-RA_parser_proto.parseStringHex = function () {
+P_proto.parseStringHex = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LESS_THAN_SIGN) return null;
 
@@ -272,7 +285,7 @@ RA_parser_proto.parseStringHex = function () {
     return Buffer.from(Buffer.from(t).toString(BASE_ENCODE), 'hex').toString();
 };
 
-RA_parser_proto.parseString = function () {
+P_proto.parseString = function () {
     var o = this.buf[this.p];
 
     if (o === LESS_THAN_SIGN) return this.parseStringHex();
@@ -299,7 +312,7 @@ function isEndOfName(o) {
         || o === PERCENT_SIGN;
 };
 
-RA_parser_proto.parseName = function () {
+P_proto.parseName = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== SOLIDUS) return undefined;
 
@@ -321,7 +334,7 @@ RA_parser_proto.parseName = function () {
     return Buffer.from(t).toString();
 };
 
-RA_parser_proto.parseArray = function () {
+P_proto.parseArray = function () {
     var p = this.p, buf = this.buf, o = buf[p++];
     if (o !== LEFT_SQUARE_BRACKET) return undefined;
 
@@ -337,11 +350,34 @@ RA_parser_proto.parseArray = function () {
     return out;
 };
 
-RA_parser_proto.parseDictionary = function () {
+P_proto.parseDictionaryNameValuePair = function (obj) {
+    var key = this.parseName();
     // #TODO:
 };
 
-RA_parser_proto.parseObject = function () {
+P_proto.parseDictionary = function () {
+    var buf = this.buf, p = buf.indexOf(DOUBLE_LESS_THAN_SIGN, this.p), o;
+    var obj = {};
+
+    while (true) {
+        p = this.skipSpaces(p);
+        o = buf[p];
+        if (o === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) break;
+
+        if (o === SOLIDUS) {
+            this.parseDictionaryNameValuePair(obj)
+        }
+        else {
+            console.error("Invalid dictionary, found: '" + String(o) + "' but expected: '/' at offset " + String(p));
+        };
+
+        p++;
+    }
+
+    return obj;
+}
+
+P_proto.parseObject = function () {
     this.skipSpaces();
     var p = this.p, buf = this.buf, o = buf[p];
 
@@ -376,176 +412,10 @@ RA_parser_proto.parseObject = function () {
     return undefined;
 };
 
-// Names
-// Arrays
-// Dictionaries
-// Streams
-// null object
 
-
-/*
-* PDFParser
-*/
-function PDFParser(buffer) { //https://nodejs.org/api/buffer.html#class-buffer
-    this.buf = buffer;
-    this.p = 0;
-};
-
-const _proto = PDFParser.prototype;
-
-
-/*
- * Base operations
- */
-_proto.setP = function (byteOffset) {
-    this.p = byteOffset || 0;
-};
-
-_proto.sub = function (start, end) {
-    return this.buf.subarray(start, end);
-};
-
-_proto.subFrom = function (start, length) {
-    return this.buf.subarray(start, start + length);
-};
-
-_proto.indexOfNextLine = function (byteOffset) {
-    var p = isNaN(byteOffset) ? this.p : byteOffset, l = this.buf.length;
-    if (p >= l) return l;
-
-    var buf = this.buf, o; while (p < l) {
-        if ((o = buf[p]) === ASCII_LF) return p + 1;// LF
-        if (o === ASCII_CR) {
-            if (buf[p + 1] === ASCII_LF) return p + 2;// CR LF
-            return p + 1;//CR
-        };
-        p++;
-    };
-
-    return l;
-};
-
-_proto.readLine = function (byteOffset) {
-    var p = byteOffset || this.p;
-    return this.sub(p, (this.p = this.indexOfNextLine(p)));
-};
-
-_proto.isWhitespace = function (o) {
-    return o === ASCII_NULL
-        || o === ASCII_HT
-        || o === ASCII_LF
-        || o === ASCII_FF
-        || o === ASCII_CR
-        || o === ASCII_SPACE
-}
-
-_proto.skipSpaces = function (byteOffset) {
-    var p = isNaN(byteOffset) ? this.p : byteOffset, buf = this.buf, o, l = buf.length;
-
-    while (p < l) {
-        o = buf[p];
-        if (!(o === ASCII_NULL
-            || o === ASCII_HT
-            || o === ASCII_LF
-            || o === ASCII_FF
-            || o === ASCII_CR
-            || o === ASCII_SPACE
-        )) return (this.p = p);
-
-        // Skip comment
-        if (o === PERCENT_SIGN) p = this.indexOfNextLine(p);
-
-        p++;
-    };
-
-    return (this.p = l);
-};
-
-
-/*
- * Parsing Objects
- */
-
-
-_proto.isEndOfName = function (o) {
-    return o === ASCII_NULL
-        || o === ASCII_HT
-        || o === ASCII_LF
-        || o === ASCII_FF
-        || o === ASCII_CR
-        || o === ASCII_SPACE
-        || o === LESS_THAN_SIGN
-        || o === GREATER_THAN_SIGN
-        || o === LEFT_SQUARE_BRACKET
-        || o === RIGHT_SQUARE_BRACKET
-        || o === LEFT_PARENTHESIS
-        || o === RIGHT_PARENTHESIS
-        || o === PERCENT_SIGN
-        || o === SOLIDUS
-}
-
-_proto.parseName = function () {
-    var p = this.p, buf = this.buf, o, name = [];
-
-    while (true) {
-        o = buf[p];
-        if (o === NUMBER_SIGN) {
-            var t = Buffer.from([buf[p + 1], buf[p + 2]]).toString();
-            if (isNaN(t)) {
-                console.error("Error: expected hex digit, actual='" + t + "'");
-                console.trace();
-            }
-            else {
-                p += 2;
-                name.push(parseInt(t))
-            };
-        }
-        else if (this.isEndOfName(o)) {
-            break;
-        }
-        else {
-            name.push(o)
-        };
-        p++;
-    };
-
-    this.p = p;
-    return Buffer.from(name).toString();
-};
-
-_proto.parseDictionaryNameValuePair = function (obj) {
-    var key = this.parseName();
-    // #TODO:
-};
-
-_proto.parseDictionary = function () {
-    var buf = this.buf, p = buf.indexOf(DOUBLE_LESS_THAN_SIGN, this.p), o;
-    var obj = {};
-
-    while (true) {
-        p = this.skipSpaces(p);
-        o = buf[p];
-        if (o === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) break;
-
-        if (o === SOLIDUS) {
-            this.parseDictionaryNameValuePair(obj)
-        }
-        else {
-            console.error("Invalid dictionary, found: '" + String(o) + "' but expected: '/' at offset " + String(p));
-        };
-
-        p++;
-    }
-
-    return obj;
-}
-
-
-/*
- * Main operations
- */
+// Parsing PDF File Structure
 const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
-_proto.parseHeader = function () {
+P_proto.parseHeader = function () {
     var p = this.buf.indexOf(PDF_HEADER);
     var header = this.sub(p, this.indexOfNextLine(p)).toString().replace(/^\s+|\s+$/g, "");
     var tokens = header.match(/\d+/g);
@@ -555,23 +425,21 @@ _proto.parseHeader = function () {
     };
 };
 
-_proto.parseStartXref = function (byteOffset) {
-    var pEOF = this.buf.lastIndexOf(EOF_MARKER, byteOffset || -1);
-    var pSTARTXREF = this.buf.lastIndexOf(STARTXREF, pEOF);
-    console.log(this.indexOfNextLine(pSTARTXREF))
-    return parseInt(this.readLine(this.indexOfNextLine(pSTARTXREF)).toString());
+P_proto.parseStartXref = function (byteOffset) {
+    return parseInt(this.setP(byteOffset || -1).goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
 };
 
-_proto.parseXrefSubsection = function () {
+P_proto.parseXrefSubsection = function () {
     this.readLine()
 };
 
-_proto.parseXref = function () {
+P_proto.parseXref = function () {
+    this.skipExpectedBuf(XREF);
     var p = this.buf.indexOf(XREF, this.p);
-
+    // #TODO:
 };
 
-_proto.parseTrailer = function () {
+P_proto.parseTrailer = function () {
     return this
         .setP(this.buf.indexOf(TRAILER, this.p))
         .parseDictionary();
