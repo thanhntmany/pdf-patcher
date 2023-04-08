@@ -30,5 +30,5 @@ const PDFParser = require('./pdf-buffer-parser');
 // console.log(buf1.compare(buf2));
 
 
-var pdfra = PDFParser.fromFile('./tmpl_page2.pdf');
-console.dir(pdfra, {depth: null})
+var pdfra = PDFParser.fromFile('./tmpl_page2.pdf').getObject(1, 0);
+console.dir(pdfra, { depth: null })

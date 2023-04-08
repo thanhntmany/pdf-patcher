@@ -428,10 +428,11 @@ _proto.parseObject = function () {
 };
 
 _proto.parseStreamObject = function () {
-    // #TODO: ###
+    // #TODO: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 };
 
 _proto.parseIndirectObject = function () {
+    this.skipSpaces();
     var obj = {};
     obj.num = this.passDigits();
     this.skipSpaces()
@@ -531,10 +532,36 @@ _proto.parseTrailer = function () {
 };
 
 // work with Object
-_proto.getObject = function (num, gen) {
+
+_proto.getObjectOffset = function (num, gen) {
     if (isNaN(gen)) gen = 0;
     var key = this.genXrefObjectKey(num, gen);
 
+    var xref = this.xref;
+
+    if (xref.xrefTable.hasOwnProperty(key)) {
+        var entry = xref.xrefTable[key];
+        if (entry.status === INDIRECT_OBJ_FREE) return null;
+        // Assume: entry.status === INDIRECT_OBJ_FREE
+        return entry.p
+    };
+
+    // XXXXXXXXXXXXXX nested case, xrefstrm
+};
+
+_proto.loadObject = function (num, gen) {
+    var offset = this.getObjectOffset(num, gen || 0);
+
+    console.log("offset", offset)
+
+    if (isNaN(offset)) return undefined;
+    return this.setP(offset).parseIndirectObject();
+};
+
+_proto.getObject = function (num, gen) {
+    if (isNaN(gen)) gen = 0;
+    var cache = this.cache, key = this.genXrefObjectKey(num, gen);
+    return cache.hasOwnProperty(key) ? cache[key] : cache[key] = this.loadObject(num, gen);
 };
 
 
