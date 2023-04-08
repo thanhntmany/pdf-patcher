@@ -38,6 +38,11 @@ const BASE_ENCODE = 'ascii',
     TRUE = Buffer.from('true', BASE_ENCODE),
     FALSE = Buffer.from('false', BASE_ENCODE),
 
+    STREAM = Buffer.from('stream\n', BASE_ENCODE),
+    ENDSTREAM = Buffer.from('\nendstream', BASE_ENCODE),
+    OBJ = Buffer.from('obj\n', BASE_ENCODE),
+    ENDOBJ = Buffer.from('\nendobj', BASE_ENCODE),
+
     XREF = Buffer.from('xref', BASE_ENCODE),
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
     STARTXREF = Buffer.from('startxref', BASE_ENCODE),
@@ -159,6 +164,12 @@ P_proto.passTheNext = function (expectedBuf) {
     return this;
 };
 
+P_proto.passDigits = function () {
+    var buf = this.buf, p = this.p, start = p;
+    while (isDigit(buf[p++])) { };
+    return parseInt(this.sub(start, (this.p = p)).toString());
+};
+
 P_proto.goToNextLine = function () {
     this.p = this.indexOfNextLine(this.p)
     return this;
@@ -207,9 +218,7 @@ P_proto.parseNumber = function () {
         p++;
     };
 
-    while (true) {
-        o = buf[p];
-        if (!isDigit(o)) break;
+    while (isDigit(o = buf[p])) {
         num.push(o);
         p++;
     };
@@ -218,9 +227,7 @@ P_proto.parseNumber = function () {
     if (o === DOT_SIGN) {
         num.push(DOT_SIGN);
         p++;
-        while (true) {
-            o = buf[p];
-            if (!isDigit(o)) break;
+        while (isDigit(o = buf[p])) {
             num.push(o);
             p++;
         };
@@ -348,7 +355,7 @@ P_proto.parseName = function () {
 };
 
 P_proto.parseArray = function () {
-    if (this.passTheNext(LEFT_SQUARE_BRACKET).p < 0) return undefined;
+    if (!this.skipExpectedBuf(LEFT_SQUARE_BRACKET)) return undefined;
     var buf = this.buf, o,
         stack = [], item;
     while ((o = buf[this.skipSpaces().p]) !== undefined && o !== RIGHT_SQUARE_BRACKET) {
@@ -360,7 +367,7 @@ P_proto.parseArray = function () {
 };
 
 P_proto.parseDictionary = function () {
-    if (this.passTheNext(DOUBLE_LESS_THAN_SIGN).p < 0) return undefined;
+    if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
 
     var buf = this.buf, l = buf.length, p,
         stack = [], item;
@@ -410,6 +417,35 @@ P_proto.parseObject = function () {
     return undefined;
 };
 
+P_proto.parseStreamObject = function () {
+    // #TODO: ###
+};
+
+P_proto.parseIndirectObject = function () {
+    var obj_num = this.passDigits();
+    this.skipSpaces()
+    var obj_gen = this.passDigits();
+    this.skipSpaces()
+
+    if (!this.skipExpectedBuf(OBJ)) {
+        throw new Error(`Could not find expect "${OBJ.toString()}" at offset ${this.p} when parsing IndirectObject!!`);
+    };
+    this.skipSpaces()
+
+    if (this.skipExpectedBuf(ENDOBJ)) return {
+        num: obj_num,
+        gen: obj_gen,
+        value: null
+    };
+
+    var obj_value = this.parseObject();
+    this.skipSpaces()
+
+    if (this.skipExpectedBuf(ENDOBJ)) return {
+    };
+    
+    // #TODO: ###
+};
 
 // Parsing PDF File Structure
 const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
@@ -492,8 +528,8 @@ P_proto.parseTrailer = function (byteOffset) {
  * PDFIndirectReference
  */
 function PDFIndirectReference(gen_number, obj_number) {
-    this.gen_number = gen_number || 0;
-    this.obj_number = obj_number;
+    this.gen = gen_number || 0;
+    this.num = obj_number;
 };
 
 /*
