@@ -375,15 +375,9 @@ _proto.parseName = function () {
 
 _proto.parseArray = function () {
     if (!this.skipExpectedOct(LEFT_SQUARE_BRACKET)) return undefined;
-    var buf = this.buf, o,
-        stack = [], item;
-    while ((o = buf[this.skipSpaces().p]) !== undefined) {
 
-        if (o === RIGHT_SQUARE_BRACKET) {
-            this.p++
-            break;
-        };
-
+    var buf = this.buf, l = buf.length, stack = [], item;
+    while (this.skipSpaces().p < l && !this.skipExpectedOct(RIGHT_SQUARE_BRACKET)) {
         if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
@@ -393,9 +387,8 @@ _proto.parseArray = function () {
 _proto.parseDictionary = function () {
     if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
 
-    var buf = this.buf, l = buf.length, p,
-        stack = [], item;
-    while (!(buf[p = this.skipSpaces().p] === GREATER_THAN_SIGN && buf[p + 1] === GREATER_THAN_SIGN) && p < l) {
+    var buf = this.buf, l = buf.length, stack = [], item;
+    while (this.skipSpaces().p < l && !this.skipExpectedBuf(DOUBLE_GREATER_THAN_SIGN)) {
         if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
@@ -467,8 +460,8 @@ _proto.parseIndirectObject = function () {
     this.skipSpaces();
 
     // Stream Objects
-    // #TODO:
-    if (this.skipExpectedBuf(STREAM)) obj.streamStart = this.p;
+    // #TODO: adress stream obj, (decompress ....)
+    if (this.skipExpectedBuf(STREAM)) obj.value._streamStart = this.p;
 
     return obj;
 };
@@ -564,7 +557,7 @@ _proto.getIndirectObjectOffset = function (num, gen) {
         return entry.p
     };
 
-    // XXXXXXXXXXXXXX nested case, xrefstrm
+    // #TODO: nested case, xrefstrm
 };
 
 _proto.loadObject = function (num, gen) {
