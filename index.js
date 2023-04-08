@@ -38,5 +38,6 @@ const PDFRandomAccess = require('./pdf-buffer-parser');
 // console.log(buf1.compare(buf2));
 
 
-var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').parser.parseHeader();
-console.log(pdfra);
+var pdfra = PDFRandomAccess.fromFile('./tmpl_page2.pdf').loadXref();
+
+console.log(pdfra)

@@ -423,26 +423,50 @@ P_proto.parseHeader = function () {
     };
 };
 
+const XREFSUBSECTION_SPLIT_REGEX = /\s/g;
+P_proto.parseXrefSubsection = function () {
+    var out = {}, key,
+        tks = this.readLine().toString().split(XREFSUBSECTION_SPLIT_REGEX),
+        start = parseInt(tks.shift()), end = start + parseInt(tks.shift()), i;
+
+    for (i = start; i < end; i++) {
+        tks = this.readLine().toString().split(XREFSUBSECTION_SPLIT_REGEX);
+        key = String(i) + "-" + String(parseInt(tks[1]))
+        if (tks[2] === 'f') {
+            out[key] = {
+                status: "free",
+                nextFreeObjNo: parseInt(tks[0])
+            };
+        }
+        else if (tks[2] === 'n') {
+            out[key] = {
+                status: "in-use",
+                p: parseInt(tks[0])
+            };
+        };
+    };
+
+    return out;
+};
+
+P_proto.parseXref = function (byteOffset) {
+    this.setP(byteOffset).goToNext(XREF).goToNextLine();
+
+    var out = {};
+    while (isDigit(this.buf[this.p])) {
+        Object.assign(out, this.parseXrefSubsection())
+    };
+
+    return out;
+};
+
+P_proto.parseTrailer = function (byteOffset) {
+    return this.setP(byteOffset || -1).goToLast(TRAILER).skipSpaces().parseDictionary();
+};
+
 P_proto.parseStartXref = function (byteOffset) {
     return parseInt(this.setP(byteOffset || -1).goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
 };
-
-P_proto.parseXrefSubsection = function () {
-    this.readLine()
-};
-
-P_proto.parseXref = function () {
-    this.skipExpectedBuf(XREF);
-    var p = this.buf.indexOf(XREF, this.p);
-    // #TODO:
-};
-
-P_proto.parseTrailer = function () {
-    return this
-        .setP(this.buf.indexOf(TRAILER, this.p))
-        .parseDictionary();
-};
-
 
 /*
  * PDFIndirectReference
@@ -471,8 +495,6 @@ function PDFRandomAccess(buffer) {
 
     this.xref = {}; // obj_number-gen_number/{offset: ##, state: f/n}
     this.cacheObj = {};
-
-    this.loadXref();
 };
 PDFRandomAccess.fromFile = function (file) {
     return new this(Fs.readFileSync(file));
@@ -484,9 +506,8 @@ RA_proto.createBufView = function (byteOffset, length) {
     return Buffer.from(this.buf.buffer, this.buf.byteOffset + (byteOffset || 0), length)
 };
 
-RA_proto.loadXref = function () {
-    var startXref = this.parser.parseStartXref();
-    console.log("startXref -> ", startXref)
+RA_proto.loadXref = function (p) {
+    return this.parser.parseXref(this.parser.parseStartXref(p));
 };
 
 RA_proto.loadIndirectObjectAtOffset = function (offset) {
