@@ -1,12 +1,13 @@
 'use strict';
+const PDFPageHandler = require('./pdf-page-handler');
 
 
 /*
  * PDFHandler
  */
-function PDFPagesHandler(pageWalker, pdfHandler) {
+function PDFPagesHandler(pagesWalker, pdfHandler) {
     this.pdf = pdfHandler;
-    this.walker = pageWalker;
+    this.walker = pagesWalker;
 };
 const _proto = PDFPagesHandler.prototype;
 
@@ -19,9 +20,6 @@ _proto.getFlattenKidsArray = function (pagesWalker) {
 
     var out = [], item, kids = this.walker.prop("Kids"),
         i, l = kids.value().length;
-
-    console.count("loop")
-
     for (i = 0; i < l; i++) {
         item = kids.prop(i);
         switch (item.prop("Type").value()) {
@@ -39,6 +37,10 @@ _proto.getFlattenKidsArray = function (pagesWalker) {
     };
 
     return out;
+};
+
+_proto.getArrayOfPage = function () {
+    return this.getFlattenKidsArray().map(pageWalker => new PDFPageHandler(pageWalker, this.pdf))
 };
 
 module.exports = exports = PDFPagesHandler;

@@ -2,34 +2,13 @@
 
 const PDFHandler = require('./pdf-handler');
 
-// var ph = PDFHandler.fromFile('./tmpl_page2.pdf');
-var ph = PDFHandler.fromFile('./template/template_full.pdf');
-// console.dir(ph)
+// var pdf = PDFHandler.fromFile('./tmpl_page2.pdf');
+var pdf = PDFHandler.fromFile('./template/template_full.pdf');
 
-// var r = ph.root;
-// console.dir(r)
-// r.prop('Pages', 'Kids', 0).dir();
+var pages = pdf.getPages();
+var kids = pages.getArrayOfPage(), kid;
+for (kid of kids) {
+    console.log(kid)
+};
 
-// r.prop('Pages', 'Kids', 2).dir();
-
-// var Kids = r.prop('Pages', 'Kids');
-
-// var i, l = ph.getNoPages(), page;
-// for (i=0; i<l; i++) {
-//     console.log(`\n -- ${i} ---------------------------`)
-//     // Kids.prop(i, 'Resources', 'Font', 'F1').dir();
-    
-//     page = ph.isolatePage(i).walker;
-
-//     // console.log(page.prop('Contents', 0).value().subarray(0, 100).toString());
-//     // console.log(page.prop('Resources', 'Font', 'F1', "ToUnicode").value().toString());
-//     console.log(page.prop('Resources', 'Font', 'F4').value());
-
-//     // content = Kids.prop(i, 'Contents', 0).value().toString();
-//     // console.log(content);
-// };
-
-
-var pages = ph.getPages();
-var leaves = pages.getFlattenKidsArray();
-console.log(leaves);
+// console.log(kids);

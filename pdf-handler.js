@@ -25,13 +25,5 @@ _proto.getPages = function (pageNum) {
     return new PDFPagesHandler(this.root.prop('Pages'), this);
 };
 
-_proto.getNoPages = function () {
-    return this.root.prop('Pages', 'Kids').value().length;
-};
-
-// #TODO: adress the pages tree cases and inheritable problem
-_proto.isolatePage = function (pageNum) {
-    return new PDFPageHandler(this.root.prop('Pages', 'Kids', pageNum), this);
-};
 
 module.exports = exports = PDFHandler;
