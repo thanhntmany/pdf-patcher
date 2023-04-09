@@ -28,7 +28,7 @@ function ObjectStream(dictionary, stream, root) {
     this.root = root;
 };
 ObjectStream.parseIndirectObject = function (dictionary, stream, root) {
-    return (new this(dictionary, stream, root)).decode();
+    return (new this(dictionary, stream, root)).decode().stream;
 };
 
 const _proto = ObjectStream.prototype;

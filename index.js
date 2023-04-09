@@ -3,6 +3,8 @@ const { Buffer } = require('buffer');
 const Fs = require('fs');
 const PDFParser = require('./pdf-buffer-parser');
 
+// Regex to Extract Text Obj: /(?<=BT\n)([\S\s](?!\nET))+[\S\s]/g
+
 // var sample = `
 // 0001312 asdasd0 3213654561
 // `;
@@ -39,8 +41,4 @@ var Contents = pp.resolve(Kid0.Contents)
 
 console.dir(Contents[0], { depth: null })
 var Content1 = pp.resolve(Contents[0])
-console.dir(Content1, { depth: 2 })
-console.log("------------------------------")
-
-var stream = Content1.stream
-console.log(stream.toString())
+console.log(Content1.toString())
