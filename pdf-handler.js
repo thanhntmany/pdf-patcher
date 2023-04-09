@@ -27,4 +27,3 @@ _proto.isolatePage = function(pageNum) {
 };
 
 module.exports = exports = PDFHandler;
-
