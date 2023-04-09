@@ -624,6 +624,10 @@ Walker_proto.prop = function () {
         this.root);
 };
 
+Walker_proto.value = function () {
+    return this.obj;
+};
+
 Walker_proto.toJSON = function () {
     return this.obj;
 };
