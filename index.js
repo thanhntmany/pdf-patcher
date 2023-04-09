@@ -38,7 +38,7 @@ var pp = PDFParser.fromFile('./tmpl_page2.pdf');
 
 var r = pp.getRootWalker()
 // console.dir(r)
-r.prop('Pages').dir();
+r.prop('Pages', 'Kids', 0).dir();
 
 // var Pages = pp.resolve(pp.getObject(1, 0).Pages);
 // var Kids = pp.resolve(Pages.Kids)

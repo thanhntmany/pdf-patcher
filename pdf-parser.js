@@ -551,9 +551,9 @@ _proto.resolve = function (obj) {
 };
 
 _proto.resolveIn = function (obj, ...subs) {
-    var sub; while (isString(sub = subs.shift())) {
-        if (sub in obj) {
-            obj = this.resolve(base[sub]);
+    var sub; while (subs.length > 0) {
+        if (obj.hasOwnProperty(sub = subs.shift())) {
+            obj = this.resolve(obj[sub]);
         }
         else return undefined;
     };
@@ -618,9 +618,10 @@ function Walker(obj, root) {
 };
 const Walker_proto = Walker.prototype;
 
-Walker_proto.prop = function (prop) {
-    if (prop in this.obj) return new this.constructor(this.root.resolve(this.obj[prop]), this.root);
-    return undefined;
+Walker_proto.prop = function () {
+    return new this.constructor(
+        this.root.resolveIn.apply(this.root, [this.obj].concat(Array.prototype.slice.call(arguments))),
+        this.root);
 };
 
 Walker_proto.toJSON = function () {
