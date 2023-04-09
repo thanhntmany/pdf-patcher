@@ -39,5 +39,5 @@ var Contents = pp.resolve(Kid0.Contents)
 
 console.dir(Contents[0], { depth: null })
 var Content1 = pp.resolve(Contents[0])
-console.dir(Content1, { depth: null })
+console.dir(Content1, { depth: 2 })
 console.log("------------------------------")
