@@ -41,3 +41,6 @@ console.dir(Contents[0], { depth: null })
 var Content1 = pp.resolve(Contents[0])
 console.dir(Content1, { depth: 2 })
 console.log("------------------------------")
+
+var stream = Content1.stream
+console.log(stream.toString())

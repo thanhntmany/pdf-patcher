@@ -1,9 +1,22 @@
 'use strict';
+const { join } = require('path');
 
 
-function isString(o) {
-    return typeof o === 'string' || o instanceof String
-}
+const cacheFilterHandler = {};
+function getFilterHandler(filterName) {
+    if (cacheFilterHandler.hasOwnProperty(filterName)) return cacheFilterHandler[filterName];
+
+    try {
+        return cacheFilterHandler[filterName] = require(join(__dirname, "filter", filterName));
+    } catch (error) {
+        if (error.code === 'MODULE_NOT_FOUND') {
+            console.error(`\nERROR: Cannot find handler for filter "${filterName}"!!\n`)
+        }
+        else throw error;
+    }
+
+    return undefined;
+};
 
 
 /*
@@ -14,13 +27,17 @@ function ObjectStream(dictionary, stream, root) {
     this.stream = stream;
     this.root = root;
 };
+ObjectStream.parseIndirectObject = function (dictionary, stream, root) {
+    return (new this(dictionary, stream, root)).decode();
+};
+
 const _proto = ObjectStream.prototype;
 
-_proto.resolve = function(obj) {
+_proto.resolve = function (obj) {
     return this.root.resolve(obj);
 };
 
-_proto.decodeExternalStream = function() {
+_proto.decodeExternalStream = function () {
     if (!this.dictionary.hasOwnProperty('F')) return this;
 
     var dict = this.dictionary;
@@ -37,19 +54,29 @@ _proto.decodeExternalStream = function() {
     return this.decode();
 };
 
-_proto.decode = function() {
+_proto.decode = function () {
     // Ref: PDF32000_2008.pdf - 7.3.8.2 Stream Extent - Table 5
     if (this.dictionary.Length === 0) return this.decodeExternalStream()
 
     if (!this.dictionary.hasOwnProperty('Filter')) return this;
 
     var Filter = this.dictionary.Filter;
-    if (isString(Filter)) Filter = [Filter];
+    if (!Array.isArray(Filter)) Filter = [Filter];
 
     var DecodeParms = this.dictionary.DecodeParms;
-    if (Filter.length === 1 && !Array.isArray(DecodeParms)) DecodeParms = [DecodeParms];
+    if (!Array.isArray(DecodeParms)) DecodeParms = [DecodeParms];
 
+    var filterName, DecodeParm;
+    while ((filterName = Filter.shift()) !== undefined) {
+        DecodeParm = DecodeParms.shift();
+        this.stream = getFilterHandler(filterName).decode(this.stream, DecodeParm, this.root);
+        this.stream.Length = this.stream.length;
+    };
 
+    delete this.dictionary.Filter;
+    delete this.dictionary.DecodeParms;
+
+    return this;
 };
 
 module.exports = exports = ObjectStream;

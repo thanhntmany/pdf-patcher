@@ -95,7 +95,8 @@ function isHexDigit(o) {
 
 function isString(o) {
     return typeof o === 'string' || o instanceof String
-}
+};
+
 
 /*
  * PDFParser
@@ -457,7 +458,6 @@ _proto.parseIndirectObject = function () {
     this.skipSpaces();
 
     // Stream Objects
-    // #TODO: adress stream obj, (decompress ....)
     if (this.skipExpectedBuf(STREAM)) {
         this.passTheNext(ASCII_LF); // Ref: PDF32000_2008.pdf - 7.3.8.1General - NOTE 2
 
@@ -466,7 +466,7 @@ _proto.parseIndirectObject = function () {
             streamLength = this.resolve(dictionary.Length),
             stream = this.subFrom(streamStart, streamLength);
 
-        obj.value = new ObjectStream(dictionary, stream, this)
+        obj.value = ObjectStream.parseIndirectObject(dictionary, stream, this);
     };
 
     return obj;
@@ -559,7 +559,8 @@ _proto.getIndirectObjectOffset = function (num, gen) {
     if (xref.xrefTable.hasOwnProperty(key)) {
         var entry = xref.xrefTable[key];
         if (entry.status === INDIRECT_OBJ_FREE) return null;
-        // Assume: entry.status === INDIRECT_OBJ_FREE
+
+        // Assume: entry.status === INDIRECT_OBJ_INUSE
         return entry.p
     };
 
@@ -578,6 +579,10 @@ _proto.getObject = function (num, gen) {
     return cache.hasOwnProperty(key) ? cache[key] : cache[key] = this.loadObject(num, gen);
 };
 
+// Specific for decodeExternalStream
+_proto.loadFileSpecification = function(F) {
+    // #TODO: 
+};
 
 /*
  * IndirectReference
