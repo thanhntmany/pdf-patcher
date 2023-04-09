@@ -1,8 +1,9 @@
 'use strict';
-const Os = require('os');
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-const { log } = require('console');
+
+
+const ObjectStream = require('./pdf-object-stream');
 
 const BASE_ENCODE = 'ascii',
     ASCII_NULL = 0,
@@ -41,8 +42,8 @@ const BASE_ENCODE = 'ascii',
 
     OBJ = Buffer.from('obj\n', BASE_ENCODE),
     ENDOBJ = Buffer.from('\nendobj', BASE_ENCODE),
-    STREAM = Buffer.from('stream\n', BASE_ENCODE),
-    ENDSTREAM = Buffer.from('\nendstream', BASE_ENCODE),
+    STREAM = Buffer.from('stream', BASE_ENCODE),
+    ENDSTREAM = Buffer.from('endstream', BASE_ENCODE),
 
     XREF = Buffer.from('xref', BASE_ENCODE),
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
@@ -170,7 +171,7 @@ _proto.goToNext = function (expectedBuf) {
 
 _proto.passTheNext = function (expectedBuf) {
     this.p = this.buf.indexOf(expectedBuf, this.p);
-    if (this.p >= 0) this.p += expectedBuf.length;
+    if (this.p >= 0) this.p += expectedBuf.length || 1;// asume: The length of octect is 1.
     return this;
 };
 
@@ -434,10 +435,6 @@ _proto.parseObject = function () {
     return undefined;
 };
 
-_proto.parseStreamObject = function () {
-    // #TODO: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-};
-
 _proto.parseIndirectObject = function () {
     this.skipSpaces();
     var obj = {};
@@ -461,7 +458,16 @@ _proto.parseIndirectObject = function () {
 
     // Stream Objects
     // #TODO: adress stream obj, (decompress ....)
-    if (this.skipExpectedBuf(STREAM)) obj.value._streamStart = this.p;
+    if (this.skipExpectedBuf(STREAM)) {
+        this.passTheNext(ASCII_LF); // Ref: PDF32000_2008.pdf - 7.3.8.1General - NOTE 2
+
+        var dictionary = obj.value,
+            streamStart = this.p,
+            streamLength = this.resolve(dictionary.Length),
+            stream = this.subFrom(streamStart, streamLength);
+
+        obj.value = new ObjectStream(dictionary, stream, this)
+    };
 
     return obj;
 };
