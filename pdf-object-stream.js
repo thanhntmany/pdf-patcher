@@ -73,8 +73,13 @@ _proto.decode = function () {
         this.stream.Length = this.stream.length;
     };
 
-    delete this.dictionary.Filter;
-    delete this.dictionary.DecodeParms;
+    if (Filter.length === 0) {
+        delete this.dictionary.Filter;
+        delete this.dictionary.DecodeParms;
+    } else {
+        this.dictionary.Filter = Filter;
+        this.dictionary.DecodeParms = DecodeParms;
+    };
 
     return this;
 };

@@ -32,13 +32,19 @@ const PDFParser = require('./pdf-buffer-parser');
 // console.log(buf1.compare(buf2));
 
 var pp = PDFParser.fromFile('./tmpl_page2.pdf');
+
 console.log("------------------------------")
 var Pages = pp.resolve(pp.getObject(1, 0).Pages);
-
 var Kids = pp.resolve(Pages.Kids)
 var Kid0 = pp.resolve(Kids[0])
-var Contents = pp.resolve(Kid0.Contents)
+console.dir(Kid0, {depth: null})
 
-console.dir(Contents[0], { depth: null })
+console.log("------------------------------")
+var Resources = pp.resolve(Kid0.Resources)
+console.dir(Resources, {depth: null})
+
+
+
+var Contents = pp.resolve(Kid0.Contents)
 var Content1 = pp.resolve(Contents[0])
-console.log(Content1.toString())
+// console.log(Content1.toString())
