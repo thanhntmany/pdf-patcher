@@ -14,10 +14,13 @@ var r = ph.root;
 
 var Kids = r.prop('Pages', 'Kids');
 
-var i, l = Kids.prop('length').value(), content;
+var i, l = ph.getNoPages(), content;
 for (i=0; i<l; i++) {
     console.log(`\n -- ${i} ---------------------------`)
-    content = Kids.prop(i, 'Contents', 0).value().toString();
-    console.log(content);
+    // Kids.prop(i, 'Resources', 'Font', 'F1').dir();
 
+    ph.isolatePage(i).dir()
+
+    // content = Kids.prop(i, 'Contents', 0).value().toString();
+    // console.log(content);
 };

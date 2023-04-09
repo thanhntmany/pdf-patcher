@@ -18,7 +18,13 @@ PDFHandler.fromFile = function(file) {
 
 const _proto = PDFHandler.prototype;
 
+_proto.getNoPages = function() {
+    return this.root.prop('Pages', 'Kids').value().length;
+};
 
+_proto.isolatePage = function(pageNum) {
+    return this.root.prop('Pages', 'Kids', pageNum);
+};
 
 module.exports = exports = PDFHandler;
 
