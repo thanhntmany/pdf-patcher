@@ -22,8 +22,19 @@ _proto.resolve = function(obj) {
 
 _proto.decodeExternalStream = function() {
     if (!this.dictionary.hasOwnProperty('F')) return this;
-    console.warn("decodeExternalStream");
-    // #TODO:
+
+    var dict = this.dictionary;
+    this.stream = this.root.loadFileSpecification(dict.F);
+    dict.Length = this.stream.length;// The length of loaded stream is more trustworthy than "DL"
+    dict.Filter = dict.FFilter;
+    dict.DecodeParms = dict.FDecodeParms;
+
+    delete dict.F;
+    delete dict.FFilter;
+    delete dict.FDecodeParms;
+    delete dict.DL;
+
+    return this.decode();
 };
 
 _proto.decode = function() {
