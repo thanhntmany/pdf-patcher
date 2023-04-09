@@ -11,5 +11,4 @@ function PDFPageHandler(pageWalker, pdfHandler) {
 const _proto = PDFPageHandler.prototype;
 
 
-
 module.exports = exports = PDFPageHandler;

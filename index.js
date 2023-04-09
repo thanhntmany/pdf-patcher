@@ -6,23 +6,30 @@ const PDFHandler = require('./pdf-handler');
 var ph = PDFHandler.fromFile('./template/template_full.pdf');
 // console.dir(ph)
 
-var r = ph.root;
+// var r = ph.root;
 // console.dir(r)
 // r.prop('Pages', 'Kids', 0).dir();
 
 // r.prop('Pages', 'Kids', 2).dir();
 
-var Kids = r.prop('Pages', 'Kids');
+// var Kids = r.prop('Pages', 'Kids');
 
-var i, l = ph.getNoPages(), page;
-for (i=0; i<l; i++) {
-    console.log(`\n -- ${i} ---------------------------`)
-    // Kids.prop(i, 'Resources', 'Font', 'F1').dir();
+// var i, l = ph.getNoPages(), page;
+// for (i=0; i<l; i++) {
+//     console.log(`\n -- ${i} ---------------------------`)
+//     // Kids.prop(i, 'Resources', 'Font', 'F1').dir();
     
-    page = ph.isolatePage(i).walker;
-    console.log(page.prop('Contents', 0).value().subarray(0, 100).toString());
-    page.prop('Resources').dir();
+//     page = ph.isolatePage(i).walker;
 
-    // content = Kids.prop(i, 'Contents', 0).value().toString();
-    // console.log(content);
-};
+//     // console.log(page.prop('Contents', 0).value().subarray(0, 100).toString());
+//     // console.log(page.prop('Resources', 'Font', 'F1', "ToUnicode").value().toString());
+//     console.log(page.prop('Resources', 'Font', 'F4').value());
+
+//     // content = Kids.prop(i, 'Contents', 0).value().toString();
+//     // console.log(content);
+// };
+
+
+var pages = ph.getPages();
+var leaves = pages.getFlattenKidsArray();
+console.log(leaves);

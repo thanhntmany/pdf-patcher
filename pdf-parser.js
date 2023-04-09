@@ -594,9 +594,12 @@ _proto.loadFileSpecification = function (F) {
     // #TODO: 
 };
 
+_proto.genWalker = function (obj) {
+    return new Walker(obj, this)
+};
 
 _proto.getRootWalker = function () {
-    return new Walker(this.resolve(this.xref.trailerObj.Root), this);
+    return this.genWalker(this.resolve(this.xref.trailerObj.Root));
 };
 
 
