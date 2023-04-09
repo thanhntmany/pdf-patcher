@@ -84,4 +84,8 @@ _proto.decode = function () {
     return this;
 };
 
+_proto.encode = function() {
+    // #TODO:
+};
+
 module.exports = exports = ObjectStream;
