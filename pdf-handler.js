@@ -1,10 +1,8 @@
 'use strict';
-const { Buffer } = require('buffer');
 const Fs = require('fs');
 
 const PDFParser = require('./pdf-parser');
 const PDFPagesHandler = require('./pdf-pages-handler');
-const PDFPageHandler = require('./pdf-page-handler');
 
 /*
  * PDFHandler

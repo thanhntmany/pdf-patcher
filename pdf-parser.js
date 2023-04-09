@@ -589,6 +589,21 @@ _proto.getObject = function (num, gen) {
     return cache.hasOwnProperty(key) ? cache[key] : cache[key] = this.loadObject(num, gen);
 };
 
+// Might return wrong value with the cases of primitive-types obj.
+_proto.getKeyOfLoadedObject = function (obj) {
+    var key, cache = this.cache;
+    for (key in this.cache) if (cache[key] === obj) return key;
+    return undefined;
+};
+
+// Might return wrong value with the cases of primitive-types obj.
+_proto.getRefOfLoadedObject = function (obj) {
+    var key = this.getKeyOfLoadedObject(obj);
+    if (!isString(key)) return key;
+    var tokens = key.split("-");
+    return new IndirectReference(tokens[1], tokens[0]);
+};
+
 // Specific for decodeExternalStream
 _proto.loadFileSpecification = function (F) {
     // #TODO: 
@@ -611,7 +626,7 @@ function IndirectReference(gen_number, obj_number) {
     this.gen = gen_number || 0;
 };
 
-IndirectReference.prototype.toString = function() {
+IndirectReference.prototype.toString = function () {
     return String(this.num) + " " + String(this.gen) + " R";
 };
 

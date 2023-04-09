@@ -11,4 +11,4 @@ for (kid of kids) {
     console.log(kid)
 };
 
-// console.log(kids);
+console.dir(pdf.parser.cache, {depth: null});
