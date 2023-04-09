@@ -604,10 +604,13 @@ _proto.getRootWalker = function () {
  * IndirectReference
  */
 function IndirectReference(gen_number, obj_number) {
-    this.gen = gen_number || 0;
     this.num = obj_number;
+    this.gen = gen_number || 0;
 };
 
+IndirectReference.prototype.toString = function() {
+    return String(this.num) + " " + String(this.gen) + " R";
+}
 
 /*
  * Walker
