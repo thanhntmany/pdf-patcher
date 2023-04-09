@@ -3,6 +3,7 @@ const { Buffer } = require('buffer');
 const Fs = require('fs');
 
 const PDFParser = require('./pdf-parser');
+const PDFPageHandler = require('./pdf-page-handler');
 
 /*
  * PDFHandler
@@ -23,7 +24,7 @@ _proto.getNoPages = function() {
 };
 
 _proto.isolatePage = function(pageNum) {
-    return this.root.prop('Pages', 'Kids', pageNum);
+    return new PDFPageHandler(this.root.prop('Pages', 'Kids', pageNum), this);
 };
 
 module.exports = exports = PDFHandler;

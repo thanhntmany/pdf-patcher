@@ -19,7 +19,7 @@ for (i=0; i<l; i++) {
     console.log(`\n -- ${i} ---------------------------`)
     // Kids.prop(i, 'Resources', 'Font', 'F1').dir();
     
-    page = ph.isolatePage(i);
+    page = ph.isolatePage(i).walker;
     console.log(page.prop('Contents', 0).value().subarray(0, 100).toString());
     page.prop('Resources').dir();
 

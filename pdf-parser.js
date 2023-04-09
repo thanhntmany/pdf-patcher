@@ -610,7 +610,7 @@ function IndirectReference(gen_number, obj_number) {
 
 IndirectReference.prototype.toString = function() {
     return String(this.num) + " " + String(this.gen) + " R";
-}
+};
 
 /*
  * Walker
