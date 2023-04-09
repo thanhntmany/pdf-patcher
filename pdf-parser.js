@@ -594,12 +594,41 @@ _proto.loadFileSpecification = function (F) {
     // #TODO: 
 };
 
+
+_proto.getRootWalker = function () {
+    return new Walker(this.resolve(this.xref.trailerObj.Root), this);
+};
+
+
 /*
  * IndirectReference
  */
 function IndirectReference(gen_number, obj_number) {
     this.gen = gen_number || 0;
     this.num = obj_number;
+};
+
+
+/*
+ * Walker
+ */
+function Walker(obj, root) {
+    this.obj = obj;
+    this.root = root;
+};
+const Walker_proto = Walker.prototype;
+
+Walker_proto.prop = function (prop) {
+    if (prop in this.obj) return new this.constructor(this.root.resolve(this.obj[prop]), this.root);
+    return undefined;
+};
+
+Walker_proto.toJSON = function () {
+    return this.obj;
+};
+
+Walker_proto.dir = function () {
+    console.dir(this.toJSON(), { depth: null });
 };
 
 
