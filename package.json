@@ -2,7 +2,7 @@
   "name": "pdf-patcher",
   "version": "1.0.0",
   "description": "pdf-patcher",
-  "main": "index.js",
+  "main": "pdf-handler.js",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

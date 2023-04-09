@@ -1,27 +1,23 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-const PDFBufferParser = require('./pdf-buffer-parser');
 
+const PDFParser = require('./pdf-parser');
 
 /*
  * PDFHandler
  */
-function PDFHandler() {
+function PDFHandler(buffer) {
+    this.parser = new PDFParser(buffer);
+    this.root = this.parser.getRootWalker();
 };
+
 PDFHandler.fromFile = function(file) {
-    var buf = Fs.readFileSync(file);
-    var obj = new this();
-    obj.parser = new PDFBufferParser(buf);
-    return obj.init();
+    return new this(Fs.readFileSync(file));
 }
 
-const PDFHandler_proto = PDFHandler.prototype;
+const _proto = PDFHandler.prototype;
 
-PDFHandler_proto.init = function () {
-    this.header = this.parser.parseHeader();
-    return this;
-}
 
 
 module.exports = exports = PDFHandler;
