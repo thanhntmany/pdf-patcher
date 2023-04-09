@@ -11,4 +11,10 @@ function PDFPageHandler(pageWalker, pdfHandler) {
 const _proto = PDFPageHandler.prototype;
 
 
+_proto.patchContent = function(patchingMap) {
+    this.walker.dir();
+    return this;
+};
+
+
 module.exports = exports = PDFPageHandler;

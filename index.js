@@ -7,8 +7,15 @@ var pdf = PDFHandler.fromFile('./template/template_full.pdf');
 
 var pages = pdf.getPages();
 var kids = pages.getArrayOfPage(), kid;
-for (kid of kids) {
-    console.log(kid)
+// for (kid of kids) {
+//     console.log(kid)
+// };
+
+// console.dir(pdf.parser.cache, {depth: null});
+
+var patchingMap = {
+    FULL_NAME: "XxXxXxX"
 };
 
-console.dir(pdf.parser.cache, {depth: null});
+var tPage = kids[1];
+tPage.patchContent(patchingMap)
