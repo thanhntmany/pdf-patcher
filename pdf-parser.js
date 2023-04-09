@@ -550,6 +550,16 @@ _proto.resolve = function (obj) {
     return obj instanceof IndirectReference ? this.getObject(obj.num, obj.gen) : obj;
 };
 
+_proto.resolveIn = function (obj, ...subs) {
+    var sub; while (isString(sub = subs.shift())) {
+        if (sub in obj) {
+            obj = this.resolve(base[sub]);
+        }
+        else return undefined;
+    };
+    return obj;
+};
+
 _proto.getIndirectObjectOffset = function (num, gen) {
     if (isNaN(gen)) gen = 0;
     var key = this.genXrefObjectKey(num, gen);
@@ -580,7 +590,7 @@ _proto.getObject = function (num, gen) {
 };
 
 // Specific for decodeExternalStream
-_proto.loadFileSpecification = function(F) {
+_proto.loadFileSpecification = function (F) {
     // #TODO: 
 };
 

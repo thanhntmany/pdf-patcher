@@ -1,7 +1,7 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-const PDFParser = require('./pdf-buffer-parser');
+const PDFParser = require('./pdf-parser');
 
 // Regex to Extract Text Obj: /(?<=BT\n)([\S\s](?!\nET))+[\S\s]/g
 
@@ -33,17 +33,23 @@ const PDFParser = require('./pdf-buffer-parser');
 
 var pp = PDFParser.fromFile('./tmpl_page2.pdf');
 
-console.log("------------------------------")
 var Pages = pp.resolve(pp.getObject(1, 0).Pages);
 var Kids = pp.resolve(Pages.Kids)
 var Kid0 = pp.resolve(Kids[0])
+console.log("\n-- Kid0 ------------------------------")
 console.dir(Kid0, {depth: null})
 
-console.log("------------------------------")
 var Resources = pp.resolve(Kid0.Resources)
+console.log("\n-- Resources ------------------------------")
 console.dir(Resources, {depth: null})
 
+var F1 = pp.resolve(Resources.Font.F1);
+console.log("\n-- F1 ------------------------------")
+console.dir(F1, {depth: null})
 
+var ToUnicode = pp.resolve(F1.ToUnicode);
+console.log("\n-- ToUnicode ------------------------------")
+console.dir(ToUnicode.toString())
 
 var Contents = pp.resolve(Kid0.Contents)
 var Content1 = pp.resolve(Contents[0])
