@@ -106,6 +106,15 @@ exports.isOctalDigit = function (o) {
 };
 
 // check is Js string
-exports.isString = function (o) {
+exports.isJsString = function (o) {
     return typeof o === 'string' || o instanceof String
 };
+
+exports.PDFOBoolean = require('./boolean');
+exports.PDFONumeric = require('./numeric');
+exports.PDFOString = require('./string');
+exports.PDFOName = require('./name');
+exports.PDFOArray = require('./array');
+exports.PDFODictionary = require('./dictionary');
+exports.PDFONull = require('./null');
+exports.PDFOStream = require('./stream');

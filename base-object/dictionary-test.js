@@ -12,6 +12,7 @@ var parser = PDFParser.from(`<<
     /Subdictionary <<
         /Item1 0.4
         /Item2 true
+        /IRObj 12 0 R
         /LastItem (not !)
         /VeryLastItem (OK)
         /XXxX null

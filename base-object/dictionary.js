@@ -18,7 +18,8 @@ _class.parse = function (parser) {
 
     var buf = parser.buf, l = buf.length, stack = [], item;
     while (parser.skipSpaces().p < l && !parser.skipExpectedBuf(DOUBLE_GREATER_THAN_SIGN)) {
-        if ((item = parser.parseObject()) === INDIRECT_REFERENCE_KEY) item = parser.genIndirectReference(stack.pop(), stack.pop());
+        if ((item = parser.parseObject()) === INDIRECT_REFERENCE_KEY)
+            item = parser.genIndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
 

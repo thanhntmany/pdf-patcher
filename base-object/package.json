@@ -1,0 +1,5 @@
+{
+  "name": "base",
+  "private": true,
+  "main": "base.js"
+}

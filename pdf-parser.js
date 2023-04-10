@@ -2,107 +2,59 @@
 const { Buffer } = require('buffer');
 const Fs = require('fs');
 
-const PDFOBoolean = require('./base-object/boolean');
-const PDFONumeric = require('./base-object/numeric');
-const PDFOString = require('./base-object/string');
-const PDFOName = require('./base-object/name');
-const PDFOArray = require('./base-object/array');
-const PDFODictionary = require('./base-object/dictionary');
-const PDFONull = require('./base-object/null');
-
-const PDFOStream = require('./base-object/stream');
+// const PDFOBoolean = require('./base-object/boolean');
+// const PDFONumeric = require('./base-object/numeric');
+// const PDFOString = require('./base-object/string');
+// const PDFOName = require('./base-object/name');
+// const PDFOArray = require('./base-object/array');
+// const PDFODictionary = require('./base-object/dictionary');
+// const PDFONull = require('./base-object/null');
+// const PDFOStream = require('./base-object/stream');
 
 const BASE_ENCODE = 'ascii',
-    ASCII_NULL = 0,
-    ASCII_HT = 9,
     ASCII_LF = 10,
-    ASCII_FF = 12,
     ASCII_CR = 13,
-    ASCII_BS = 8,
-    ASCII_SPACE = 32,
 
-    ASCII_n = Buffer.from('n', BASE_ENCODE)[0],
-    ASCII_r = Buffer.from('r', BASE_ENCODE)[0],
-    ASCII_t = Buffer.from('t', BASE_ENCODE)[0],
-    ASCII_b = Buffer.from('b', BASE_ENCODE)[0],
-    ASCII_f = Buffer.from('f', BASE_ENCODE)[0],
     ASCII_R = Buffer.from('R', BASE_ENCODE)[0],
 
     LEFT_PARENTHESIS = Buffer.from('(', BASE_ENCODE)[0],
-    RIGHT_PARENTHESIS = Buffer.from(')', BASE_ENCODE)[0],
     LESS_THAN_SIGN = Buffer.from('<', BASE_ENCODE)[0],
-    GREATER_THAN_SIGN = Buffer.from('>', BASE_ENCODE)[0],
     LEFT_SQUARE_BRACKET = Buffer.from('[', BASE_ENCODE)[0],
-    RIGHT_SQUARE_BRACKET = Buffer.from(']', BASE_ENCODE)[0],
-    LEFT_CURLY_BRACKET = Buffer.from('{', BASE_ENCODE)[0],
-    RIGHT_CURLY_BRACKET = Buffer.from('}', BASE_ENCODE)[0],
     SOLIDUS = Buffer.from('/', BASE_ENCODE)[0],
-    REVERSE_SOLIDUS = Buffer.from('\\', BASE_ENCODE)[0],
     PERCENT_SIGN = Buffer.from('%', BASE_ENCODE)[0],
-    NUMBER_SIGN = Buffer.from('#', BASE_ENCODE)[0],
-    DOUBLE_LESS_THAN_SIGN = Buffer.from('<<', BASE_ENCODE),
-    DOUBLE_GREATER_THAN_SIGN = Buffer.from('>>', BASE_ENCODE),
-
-    NULL = Buffer.from('null', BASE_ENCODE),
-    TRUE = Buffer.from('true', BASE_ENCODE),
-    FALSE = Buffer.from('false', BASE_ENCODE),
 
     OBJ = Buffer.from('obj\n', BASE_ENCODE),
     ENDOBJ = Buffer.from('\nendobj', BASE_ENCODE),
     STREAM = Buffer.from('stream', BASE_ENCODE),
-    ENDSTREAM = Buffer.from('endstream', BASE_ENCODE),
 
     XREF = Buffer.from('xref', BASE_ENCODE),
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
     STARTXREF = Buffer.from('startxref', BASE_ENCODE),
     EOF_MARKER = Buffer.from('%%EOF', BASE_ENCODE),
-    BOOL_TRUE = Buffer.from('true', BASE_ENCODE),
-    BOOL_FALSE = Buffer.from('false', BASE_ENCODE),
 
     PLUS_SIGN = Buffer.from('+', BASE_ENCODE)[0],
     MINUS_SIGN = Buffer.from('-', BASE_ENCODE)[0],
     DOT_SIGN = Buffer.from('.', BASE_ENCODE)[0],
-    DIGIT_0 = Buffer.from('0', BASE_ENCODE)[0],
-    DIGIT_7 = Buffer.from('7', BASE_ENCODE)[0],
-    DIGIT_9 = Buffer.from('9', BASE_ENCODE)[0],
 
-    HEX_0 = Buffer.from('0', BASE_ENCODE)[0],
-    HEX_9 = Buffer.from('9', BASE_ENCODE)[0],
-    HEX_A = Buffer.from('A', BASE_ENCODE)[0],
-    HEX_Z = Buffer.from('Z', BASE_ENCODE)[0],
-    HEX_a = Buffer.from('a', BASE_ENCODE)[0],
-    HEX_z = Buffer.from('z', BASE_ENCODE)[0],
-
-    INDIRECT_REFERENCE_KEY = Symbol("R"),
     INDIRECT_OBJ_INUSE = Symbol("in-use"),
     INDIRECT_OBJ_FREE = Symbol("free")
     ;
 
-function isSpace(o) {
-    return o === ASCII_SPACE
-        || o === ASCII_HT
-        || o === ASCII_LF
-        || o === ASCII_CR
-        || o === ASCII_FF
-        || o === ASCII_NULL;
-    // #TODO: run statistics to get the best sorting
-};
 
-function isDigit(o) {
-    return DIGIT_0 <= o && o <= DIGIT_9;
-};
+const {
+    INDIRECT_REFERENCE_KEY,
+    isSpace, isDigit, isJsString,
 
-function isOctalDigit(o) {
-    return DIGIT_0 <= o && o <= DIGIT_7;
-};
+    PDFOBoolean,
+    PDFONumeric,
+    PDFOString,
+    PDFOName,
+    PDFOArray,
+    PDFODictionary,
+    PDFONull,
+    PDFOStream,
 
-function isHexDigit(o) {
-    return (HEX_0 <= o && o <= HEX_9) || (HEX_A <= o && o <= HEX_Z) || (HEX_a <= o && o <= HEX_z);
-};
-
-function isString(o) {
-    return typeof o === 'string' || o instanceof String
-};
+} = require('./base-object');
 
 
 /*
@@ -224,181 +176,6 @@ _proto.readLine = function () {
 };
 
 // Parsing Objects
-_proto.parseNumber = function () {
-    var p = this.p, buf = this.buf, o;
-    var num = [];
-
-    o = buf[p];
-    if (o === MINUS_SIGN) {
-        num.push(MINUS_SIGN)
-        p++;
-    }
-    else if (o === PLUS_SIGN) {
-        num.push(PLUS_SIGN)
-        p++;
-    };
-
-    while (isDigit(o = buf[p])) {
-        num.push(o);
-        p++;
-    };
-
-    o = buf[p];
-    if (o === DOT_SIGN) {
-        num.push(DOT_SIGN);
-        p++;
-        while (isDigit(o = buf[p])) {
-            num.push(o);
-            p++;
-        };
-    };
-
-    this.p = p;
-    if (num.length === 0) return NaN;
-    return Number(Buffer.from(num).toString());
-};
-
-_proto.parseStringLiteral = function () {
-    var p = this.p, buf = this.buf, o = buf[p++];
-    if (o !== LEFT_PARENTHESIS) return undefined;
-
-    var depth = 0, ddd;
-    var t = [];
-
-    o = buf[p++];
-    while (o !== undefined && (o !== RIGHT_PARENTHESIS || depth !== 0)) {
-
-        if (o === REVERSE_SOLIDUS) {
-            switch (o = buf[p++]) {
-                case ASCII_n: o = ASCII_LF; break;
-                case ASCII_r: o = ASCII_CR; break;
-                case ASCII_t: o = ASCII_HT; break;
-                case ASCII_b: o = ASCII_BS; break;
-                case ASCII_f: o = ASCII_FF; break;
-                case LEFT_PARENTHESIS: o = LEFT_PARENTHESIS; break;
-                case RIGHT_PARENTHESIS: o = RIGHT_PARENTHESIS; break;
-                case REVERSE_SOLIDUS: o = REVERSE_SOLIDUS; break;
-                case ASCII_LF:
-                case ASCII_CR:
-                    if (buf[p] === ASCII_LF) p++;
-                    continue;
-                default:
-                    if (isOctalDigit(o)) {
-                        ddd = [o];
-                        if (isOctalDigit(o = buf[p])) {
-                            ddd.push(o); p++;
-                            if (isOctalDigit(o = buf[p])) {
-                                ddd.push(o); p++;
-                            };
-                        };
-                        o = parseInt(Buffer.from(ddd).toString(BASE_ENCODE), 8);
-                    };
-                    break;
-            };
-        }
-        else if (o === LEFT_PARENTHESIS) {
-            depth++;
-        }
-        else if (o === RIGHT_PARENTHESIS) {
-            depth--;
-        };
-
-        t.push(o);
-        o = buf[p++];
-    };
-
-    this.p = p;
-    return Buffer.from(t).toString();
-};
-
-_proto.parseStringHex = function () {
-    var p = this.p, buf = this.buf, o = buf[p++];
-    if (o !== LESS_THAN_SIGN) return null;
-
-    var t = [];
-    do {
-        if (isHexDigit(o = buf[p++])) t.push(o);
-    }
-    while (o !== GREATER_THAN_SIGN);
-
-    this.p = p;
-    return Buffer.from(Buffer.from(t).toString(BASE_ENCODE), 'hex').toString();
-};
-
-_proto.parseString = function () {
-    var o = this.buf[this.p];
-
-    if (o === LESS_THAN_SIGN) return this.parseStringHex();
-    else if (o === LEFT_PARENTHESIS) return this.parseStringLiteral();
-    return null;
-};
-
-
-function isEndOfName(o) {
-    return o === undefined
-        || o === ASCII_SPACE
-        || o === ASCII_HT
-        || o === ASCII_LF
-        || o === ASCII_CR
-        || o === ASCII_FF
-        || o === ASCII_NULL
-        || o === LEFT_PARENTHESIS
-        || o === RIGHT_PARENTHESIS
-        || o === LESS_THAN_SIGN
-        || o === GREATER_THAN_SIGN
-        || o === LEFT_SQUARE_BRACKET
-        || o === RIGHT_SQUARE_BRACKET
-        || o === SOLIDUS
-        || o === PERCENT_SIGN;
-};
-
-_proto.parseName = function () {
-    var p = this.p, buf = this.buf, o = buf[p++];
-    if (o !== SOLIDUS) return undefined;
-
-    var t = [];
-    do {
-        o = buf[p]; if (isEndOfName(o)) break;
-
-        if (o === NUMBER_SIGN) {
-            o = Buffer.from(buf.subarray(p + 1, p + 3).toString(BASE_ENCODE), 'hex')[0];
-            p += 2
-        };
-
-        t.push(o);
-        p++;
-    }
-    while (true);
-
-    this.p = p;
-    return Buffer.from(t).toString();
-};
-
-_proto.parseArray = function () {
-    if (!this.skipExpectedOct(LEFT_SQUARE_BRACKET)) return undefined;
-
-    var buf = this.buf, l = buf.length, stack = [], item;
-    while (this.skipSpaces().p < l && !this.skipExpectedOct(RIGHT_SQUARE_BRACKET)) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = this.genIndirectReference(stack.pop(), stack.pop());
-        stack.push(item);
-    };
-    return stack;
-};
-
-_proto.parseDictionary = function () {
-    if (!this.skipExpectedBuf(DOUBLE_LESS_THAN_SIGN)) return undefined;
-
-    var buf = this.buf, l = buf.length, stack = [], item;
-    while (this.skipSpaces().p < l && !this.skipExpectedBuf(DOUBLE_GREATER_THAN_SIGN)) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = this.genIndirectReference(stack.pop(), stack.pop());
-        stack.push(item);
-    };
-
-    var obj = {};
-    while (isString(item = stack.shift())) obj[String(item)] = stack.shift();
-    return obj;
-}
-
 _proto.parseObject = function () {
     var p = this.skipSpaces().p, buf = this.buf, o = buf[p];
     if (o === undefined) return undefined;
@@ -519,7 +296,7 @@ _proto.parseXrefTable = function () {
 };
 
 _proto.parseTrailerObj = function () {
-    return this.passTheNext(TRAILER).skipSpaces().parseDictionary();
+    return PDFODictionary.parse(this.passTheNext(TRAILER).skipSpaces());
 };
 
 _proto.parseXref = function () {
@@ -594,7 +371,7 @@ _proto.getKeyOfLoadedObject = function (obj) {
 // Might return wrong value with the cases of primitive-types obj.
 _proto.getRefOfLoadedObject = function (obj) {
     var key = this.getKeyOfLoadedObject(obj);
-    if (!isString(key)) return key;
+    if (!isJsString(key)) return key;
     var tokens = key.split("-");
     this.genIndirectReference(tokens.pop(), tokens.pop());
 };
