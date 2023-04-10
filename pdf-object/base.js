@@ -21,6 +21,20 @@ Object.assign(exports, {
     ASCII_f: Buffer.from('f', BASE_ENCODE)[0],
     ASCII_R: Buffer.from('R', BASE_ENCODE)[0],
 
+    PLUS_SIGN: Buffer.from('+', BASE_ENCODE)[0],
+    MINUS_SIGN: Buffer.from('-', BASE_ENCODE)[0],
+    DOT_SIGN: Buffer.from('.', BASE_ENCODE)[0],
+    DIGIT_0: Buffer.from('0', BASE_ENCODE)[0],
+    DIGIT_7: Buffer.from('7', BASE_ENCODE)[0],
+    DIGIT_9: Buffer.from('9', BASE_ENCODE)[0],
+
+    HEX_0: Buffer.from('0', BASE_ENCODE)[0],
+    HEX_9: Buffer.from('9', BASE_ENCODE)[0],
+    HEX_A: Buffer.from('A', BASE_ENCODE)[0],
+    HEX_Z: Buffer.from('Z', BASE_ENCODE)[0],
+    HEX_a: Buffer.from('a', BASE_ENCODE)[0],
+    HEX_z: Buffer.from('z', BASE_ENCODE)[0],
+
     LEFT_PARENTHESIS: Buffer.from('(', BASE_ENCODE)[0],
     RIGHT_PARENTHESIS: Buffer.from(')', BASE_ENCODE)[0],
     LESS_THAN_SIGN: Buffer.from('<', BASE_ENCODE)[0],
@@ -47,23 +61,15 @@ Object.assign(exports, {
     BOOL_TRUE: Buffer.from('true', BASE_ENCODE),
     BOOL_FALSE: Buffer.from('false', BASE_ENCODE),
 
-    PLUS_SIGN: Buffer.from('+', BASE_ENCODE)[0],
-    MINUS_SIGN: Buffer.from('-', BASE_ENCODE)[0],
-    DOT_SIGN: Buffer.from('.', BASE_ENCODE)[0],
-    DIGIT_0: Buffer.from('0', BASE_ENCODE)[0],
-    DIGIT_7: Buffer.from('7', BASE_ENCODE)[0],
-    DIGIT_9: Buffer.from('9', BASE_ENCODE)[0],
-
-    HEX_0: Buffer.from('0', BASE_ENCODE)[0],
-    HEX_9: Buffer.from('9', BASE_ENCODE)[0],
-    HEX_A: Buffer.from('A', BASE_ENCODE)[0],
-    HEX_Z: Buffer.from('Z', BASE_ENCODE)[0],
-    HEX_a: Buffer.from('a', BASE_ENCODE)[0],
-    HEX_z: Buffer.from('z', BASE_ENCODE)[0],
-
     INDIRECT_REFERENCE_KEY: Symbol("R"),
     INDIRECT_OBJ_INUSE: Symbol("in-use"),
-    INDIRECT_OBJ_FREE: Symbol("free")
+    INDIRECT_OBJ_FREE: Symbol("free"),
+
+    OBJ: Buffer.from('obj', BASE_ENCODE),
+    ENDOBJ: Buffer.from('\nendobj', BASE_ENCODE),
+    STREAM: Buffer.from('stream', BASE_ENCODE),
+    ENDSTREAM: Buffer.from('\nendstream', BASE_ENCODE)
+
 });
 
 

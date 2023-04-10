@@ -20,7 +20,7 @@ _class.parse = function (parser) {
     parser.skipSpaces();
 
     if (!parser.skipExpectedBuf(OBJ)) {
-        throw new Error(`Could not find expect "${OBJ.toString()}" at offset ${parser.p} [${parser.subFrom(parser.p, 100).toString()}] when parsing IndirectObject!!`);
+        throw new Error(`Could not find expect "${OBJ.toString()}" at offset ${parser.p} \n${parser.subFrom(parser.p, 100).toString()}\nwhen parsing IndirectObject!!`);
     };
     parser.skipSpaces()
 

@@ -62,6 +62,11 @@ _proto.subFrom = function (start, length) {
     return this.buf.subarray(start, start + length);
 };
 
+_proto.logHere = function () {
+    console.log("Current p: ", this.p)
+    console.log(this.subFrom(this.p, 100).toString())
+};
+
 _proto.indexOfNextLine = function (p) {
     if (isNaN(p)) p = this.p;
 
@@ -145,7 +150,7 @@ _proto.readLine = function () {
     return this.sub(this.p, (this.p = this.indexOfNextLine(this.p)));
 };
 
-// Parsing Objects
+// Parsing ------
 _proto.parseObject = function () {
     return parse(this);
 };
@@ -213,13 +218,10 @@ _proto.parseStartXref = function () {
 // @param p: shall point to the %%EOF of target trailer
 _proto.parseTrailer = function (p) {
     this.setP(this.setP(p || -1).parseStartXref());
-    var o = {
+    return {
         xrefTable: this.parseXrefTable(),
         trailerObj: this.parseTrailerObj()
-    };
-
-    console.dir(o, {depth: null})
-    return o
+    }
 };
 
 
@@ -234,10 +236,8 @@ _proto.resolve = function (obj) {
 
 _proto.resolveIn = function (obj, ...subs) {
     var sub; while (subs.length > 0) {
-        if (obj.hasOwnProperty(sub = subs.shift())) {
-            obj = this.resolve(obj[sub]);
-        }
-        else return undefined;
+        sub = subs.shift();
+        return this.resolve(obj.prop instanceof Function ? obj.prop(sub) : obj = obj[sub]);
     };
     return obj;
 };
@@ -262,7 +262,7 @@ _proto.getIndirectObjectOffset = function (num, gen) {
 _proto.loadObject = function (num, gen) {
     var offset = this.getIndirectObjectOffset(num, gen || 0);
     if (isNaN(offset)) return undefined;
-    return PDFOIndirect.parse(this.setP(offset)).value;
+    return PDFOIndirect.parse(this.setP(offset).skipSpaces()).value;
 };
 
 _proto.getObject = function (num, gen) {
@@ -283,7 +283,7 @@ _proto.getRefOfLoadedObject = function (obj) {
     var key = this.getKeyOfLoadedObject(obj);
     if (!isJsString(key)) return key;
     var tokens = key.split("-");
-    this.genIndirectReference(tokens.pop(), tokens.pop());
+    return this.genIndirectReference(tokens.pop(), tokens.pop());
 };
 
 // Specific for decodeExternalStream
@@ -296,7 +296,7 @@ _proto.genWalker = function (obj) {
 };
 
 _proto.getRootWalker = function () {
-    return this.genWalker(this.resolve(this.trailer.trailerObj.Root));
+    return this.genWalker(this.resolve(this.trailer.trailerObj.prop("Root")));
 };
 
 
