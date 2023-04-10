@@ -2,8 +2,15 @@
 const { Buffer } = require('buffer');
 const Fs = require('fs');
 
+const PDFOBoolean = require('./base-object/boolean');
+const PDFONumeric = require('./base-object/numeric');
+const PDFOString = require('./base-object/string');
+const PDFOName = require('./base-object/name');
+const PDFOArray = require('./base-object/array');
+const PDFODictionary = require('./base-object/dictionary');
+const PDFONull = require('./base-object/null');
 
-const ObjectStream = require('./pdf-object-stream');
+const PDFOStream = require('./base-object/stream');
 
 const BASE_ENCODE = 'ascii',
     ASCII_NULL = 0,
@@ -217,19 +224,6 @@ _proto.readLine = function () {
 };
 
 // Parsing Objects
-_proto.parseBoolean = function () {
-    var p = this.p, buf = this.buf;
-    if (BOOL_TRUE.equals(buf.subarray(p, p + BOOL_TRUE.length))) {
-        this.p = p + BOOL_TRUE.length;
-        return true;
-    };
-    if (BOOL_FALSE.equals(buf.subarray(p, p + BOOL_FALSE.length))) {
-        this.p = p + BOOL_FALSE.length;
-        return false;
-    };
-    return undefined;
-};
-
 _proto.parseNumber = function () {
     var p = this.p, buf = this.buf, o;
     var num = [];
@@ -410,16 +404,16 @@ _proto.parseObject = function () {
     if (o === undefined) return undefined;
     switch (o) {
         case LESS_THAN_SIGN:// << - Dictionary, < - StringHex
-            return buf[p + 1] === LESS_THAN_SIGN ? this.parseDictionary() : this.parseStringHex();
+            return buf[p + 1] === LESS_THAN_SIGN ? PDFODictionary.parse(this) : PDFOString.parseStringHex(this);
 
         case LEFT_SQUARE_BRACKET:// [ - Array
-            return this.parseArray();
+            return PDFOArray.parse(this);
 
         case LEFT_PARENTHESIS:// ( - StringLiteral
-            return this.parseStringLiteral();
+            return PDFOString.parseStringLiteral(this);
 
         case SOLIDUS:// / - Name
-            return this.parseName();
+            return PDFOName.parse(this);
 
         case ASCII_R:// R - Indirect Reference
             if (buf[p + 1] !== ASCII_R) {
@@ -432,13 +426,9 @@ _proto.parseObject = function () {
             break;
     };
 
-    if (isDigit(o) || o === MINUS_SIGN || o === DOT_SIGN || o === PLUS_SIGN) return this.parseNumber();
+    if (isDigit(o) || o === MINUS_SIGN || o === DOT_SIGN || o === PLUS_SIGN) return PDFONumeric.parse(this);
 
-    if (this.skipExpectedBuf(NULL)) return null;
-    if (this.skipExpectedBuf(TRUE)) return true;
-    if (this.skipExpectedBuf(FALSE)) return false;
-
-    return undefined;
+    return PDFOBoolean.parse(this) || PDFONull.parse(this) || undefined;
 };
 
 _proto.parseIndirectObject = function () {
@@ -471,7 +461,7 @@ _proto.parseIndirectObject = function () {
             streamLength = this.resolve(dictionary.Length),
             stream = this.subFrom(streamStart, streamLength);
 
-        obj.value = ObjectStream.parseIndirectObject(dictionary, stream, this);
+        obj.value = PDFOStream.parseIndirectObject(dictionary, stream, this);
     };
 
     return obj;

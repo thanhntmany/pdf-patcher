@@ -1,37 +1,23 @@
 'use strict';
-const { join } = require('path');
-
-
-const cacheFilterHandler = {};
-function getFilterHandler(filterName) {
-    if (cacheFilterHandler.hasOwnProperty(filterName)) return cacheFilterHandler[filterName];
-
-    try {
-        return cacheFilterHandler[filterName] = require(join(__dirname, "filter", filterName));
-    } catch (error) {
-        if (error.code === 'MODULE_NOT_FOUND') {
-            console.error(`\nERROR: Cannot find handler for filter "${filterName}"!!\n`)
-        }
-        else throw error;
-    }
-
-    return undefined;
-};
+const Filter = require("./filter");
 
 
 /*
- * ObjectStream
+ * PDFOStream
  */
-function ObjectStream(dictionary, stream, root) {
+
+// #TODO: refactor to new struct
+
+function PDFOStream(dictionary, stream, root) {
     this.dictionary = dictionary;
     this.stream = stream;
     this.root = root;
 };
-ObjectStream.parseIndirectObject = function (dictionary, stream, root) {
+const _class = PDFOStream, _proto = _class.prototype;
+_class.parseIndirectObject = function (dictionary, stream, root) {
     return (new this(dictionary, stream, root)).decode().stream;
 };
 
-const _proto = ObjectStream.prototype;
 
 _proto.resolve = function (obj) {
     return this.root.resolve(obj);
@@ -69,7 +55,7 @@ _proto.decode = function () {
     var filterName, DecodeParm;
     while ((filterName = Filter.shift()) !== undefined) {
         DecodeParm = DecodeParms.shift();
-        this.stream = getFilterHandler(filterName).decode(this.stream, DecodeParm, this.root);
+        this.stream = Filter(filterName).decode(this.stream, DecodeParm, this.root);
         this.stream.Length = this.stream.length;
     };
 
@@ -88,4 +74,7 @@ _proto.encode = function() {
     // #TODO:
 };
 
-module.exports = exports = ObjectStream;
+_proto.toPdf = _proto.encode;
+
+
+module.exports = exports = _class;

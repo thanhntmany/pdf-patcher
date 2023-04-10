@@ -1,0 +1,5 @@
+{
+  "name": "stream",
+  "private": true,
+  "main": "stream.js"
+}

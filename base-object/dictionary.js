@@ -1,10 +1,11 @@
 'use strict';
-const PDFOName = require('./name');
 const {
     DOUBLE_LESS_THAN_SIGN,
     DOUBLE_GREATER_THAN_SIGN,
     INDIRECT_REFERENCE_KEY
 } = require('./base');
+const PDFOName = require('./name');
+const PDFONull = require('./null');
 
 
 function PDFODictionary(obj) {
@@ -21,9 +22,21 @@ _class.parse = function (parser) {
         stack.push(item);
     };
 
-    var obj = {};
-    while (item instanceof PDFOName) obj[String(item)] = stack.shift();
+    var obj = {}, key, value;
+    while ((key = stack.shift()) instanceof PDFOName) {
+        /* 7.3.7 Dictionary Objects - A dictionary entry whose value is null
+        (see 7.3.9, "Null Object") shall be treated the same as if the entry does not exist.
+        (This differs from PostScript, where null behaves like any other object as the value of a dictionary entry.)*/
+        if ((value = stack.shift()) instanceof PDFONull) continue;
+
+        obj[String(key)] = value;
+    };
+
     return new this(obj);
+};
+
+_proto.dir = function () {
+    return this._;
 };
 
 _proto.value = function () {
