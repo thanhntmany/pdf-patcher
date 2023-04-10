@@ -108,6 +108,11 @@ function PDFParser(buffer) {
     this.xref = this.parseTrailer();
     this.cache = {};
 };
+
+PDFParser.from = function (string, encoding) {
+    return new this(Buffer.from(string, encoding));
+};
+
 PDFParser.fromFile = function (file) {
     return new this(Fs.readFileSync(file));
 };
