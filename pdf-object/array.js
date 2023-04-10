@@ -1,5 +1,4 @@
 'use strict';
-const { Buffer } = require('buffer');
 const {
     LEFT_SQUARE_BRACKET,
     RIGHT_SQUARE_BRACKET,

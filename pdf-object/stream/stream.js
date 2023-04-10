@@ -8,26 +8,25 @@ const Filter = require("./filter");
 
 // #TODO: refactor to new struct
 
-function PDFOStream(dictionary, stream, root) {
+function PDFOStream(dictionary, stream, parser) {
     this.dictionary = dictionary;
     this.stream = stream;
-    this.root = root;
+    this.parser = parser;
 };
 const _class = PDFOStream, _proto = _class.prototype;
-_class.parseIndirectObject = function (dictionary, stream, root) {
-    return (new this(dictionary, stream, root)).decode().stream;
+_class.parseIndirectObject = function (dictionary, stream, parser) {
+    return (new this(dictionary, stream, parser)).decode().stream;
 };
 
-
 _proto.resolve = function (obj) {
-    return this.root.resolve(obj);
+    return this.parser.resolve(obj);
 };
 
 _proto.decodeExternalStream = function () {
     if (!this.dictionary.hasOwnProperty('F')) return this;
 
     var dict = this.dictionary;
-    this.stream = this.root.loadFileSpecification(dict.F);
+    this.stream = this.parser.loadFileSpecification(dict.F);
     dict.Length = this.stream.length;// The length of loaded stream is more trustworthy than "DL"
     dict.Filter = dict.FFilter;
     dict.DecodeParms = dict.FDecodeParms;
@@ -42,7 +41,7 @@ _proto.decodeExternalStream = function () {
 
 _proto.decode = function () {
     // Ref: PDF32000_2008.pdf - 7.3.8.2 Stream Extent - Table 5
-    if (this.dictionary.Length === 0) return this.decodeExternalStream()
+    if (this.dictionary.Length.value() === 0) return this.decodeExternalStream()
 
     if (!this.dictionary.hasOwnProperty('Filter')) return this;
 
@@ -55,7 +54,7 @@ _proto.decode = function () {
     var filterName, DecodeParm;
     while ((filterName = Filter.shift()) !== undefined) {
         DecodeParm = DecodeParms.shift();
-        this.stream = Filter(filterName).decode(this.stream, DecodeParm, this.root);
+        this.stream = Filter(filterName).decode(this.stream, DecodeParm, this.parser);
         this.stream.Length = this.stream.length;
     };
 

@@ -1,0 +1,5 @@
+{
+  "name": "pdf-object",
+  "private": true,
+  "main": "object.js"
+}

@@ -1,7 +1,9 @@
 'use strict';
+const { Buffer } = require('buffer');
+
 
 const BASE_ENCODE = 'ascii';
-module.exports = exports = {
+Object.assign(exports, {
     BASE_ENCODE: BASE_ENCODE,
 
     ASCII_NULL: 0,
@@ -38,11 +40,6 @@ module.exports = exports = {
     TRUE: Buffer.from('true', BASE_ENCODE),
     FALSE: Buffer.from('false', BASE_ENCODE),
 
-    OBJ: Buffer.from('obj\n', BASE_ENCODE),
-    ENDOBJ: Buffer.from('\nendobj', BASE_ENCODE),
-    STREAM: Buffer.from('stream', BASE_ENCODE),
-    ENDSTREAM: Buffer.from('endstream', BASE_ENCODE),
-
     XREF: Buffer.from('xref', BASE_ENCODE),
     TRAILER: Buffer.from('trailer', BASE_ENCODE),
     STARTXREF: Buffer.from('startxref', BASE_ENCODE),
@@ -67,7 +64,7 @@ module.exports = exports = {
     INDIRECT_REFERENCE_KEY: Symbol("R"),
     INDIRECT_OBJ_INUSE: Symbol("in-use"),
     INDIRECT_OBJ_FREE: Symbol("free")
-}
+});
 
 
 const {
@@ -81,6 +78,7 @@ const {
     DIGIT_0, DIGIT_7, DIGIT_9,
 
     HEX_0, HEX_9, HEX_A, HEX_Z, HEX_a, HEX_z,
+
 } = exports;
 
 exports.isSpace = function (o) {
@@ -110,11 +108,4 @@ exports.isJsString = function (o) {
     return typeof o === 'string' || o instanceof String
 };
 
-exports.PDFOBoolean = require('./boolean');
-exports.PDFONumeric = require('./numeric');
-exports.PDFOString = require('./string');
-exports.PDFOName = require('./name');
-exports.PDFOArray = require('./array');
-exports.PDFODictionary = require('./dictionary');
-exports.PDFONull = require('./null');
-exports.PDFOStream = require('./stream');
+module.exports = exports

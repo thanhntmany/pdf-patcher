@@ -2,39 +2,16 @@
 const { Buffer } = require('buffer');
 const Fs = require('fs');
 
-// const PDFOBoolean = require('./base-object/boolean');
-// const PDFONumeric = require('./base-object/numeric');
-// const PDFOString = require('./base-object/string');
-// const PDFOName = require('./base-object/name');
-// const PDFOArray = require('./base-object/array');
-// const PDFODictionary = require('./base-object/dictionary');
-// const PDFONull = require('./base-object/null');
-// const PDFOStream = require('./base-object/stream');
-
 const BASE_ENCODE = 'ascii',
     ASCII_LF = 10,
     ASCII_CR = 13,
 
-    ASCII_R = Buffer.from('R', BASE_ENCODE)[0],
-
-    LEFT_PARENTHESIS = Buffer.from('(', BASE_ENCODE)[0],
-    LESS_THAN_SIGN = Buffer.from('<', BASE_ENCODE)[0],
-    LEFT_SQUARE_BRACKET = Buffer.from('[', BASE_ENCODE)[0],
-    SOLIDUS = Buffer.from('/', BASE_ENCODE)[0],
     PERCENT_SIGN = Buffer.from('%', BASE_ENCODE)[0],
-
-    OBJ = Buffer.from('obj\n', BASE_ENCODE),
-    ENDOBJ = Buffer.from('\nendobj', BASE_ENCODE),
-    STREAM = Buffer.from('stream', BASE_ENCODE),
 
     XREF = Buffer.from('xref', BASE_ENCODE),
     TRAILER = Buffer.from('trailer', BASE_ENCODE),
     STARTXREF = Buffer.from('startxref', BASE_ENCODE),
     EOF_MARKER = Buffer.from('%%EOF', BASE_ENCODE),
-
-    PLUS_SIGN = Buffer.from('+', BASE_ENCODE)[0],
-    MINUS_SIGN = Buffer.from('-', BASE_ENCODE)[0],
-    DOT_SIGN = Buffer.from('.', BASE_ENCODE)[0],
 
     INDIRECT_OBJ_INUSE = Symbol("in-use"),
     INDIRECT_OBJ_FREE = Symbol("free")
@@ -42,19 +19,11 @@ const BASE_ENCODE = 'ascii',
 
 
 const {
-    INDIRECT_REFERENCE_KEY,
     isSpace, isDigit, isJsString,
-
-    PDFOBoolean,
-    PDFONumeric,
-    PDFOString,
-    PDFOName,
-    PDFOArray,
     PDFODictionary,
-    PDFONull,
-    PDFOStream,
-
-} = require('./base-object');
+    PDFOIndirect,
+    parse
+} = require('./pdf-object')();
 
 
 /*
@@ -177,71 +146,7 @@ _proto.readLine = function () {
 
 // Parsing Objects
 _proto.parseObject = function () {
-    var p = this.skipSpaces().p, buf = this.buf, o = buf[p];
-    if (o === undefined) return undefined;
-    switch (o) {
-        case LESS_THAN_SIGN:// << - Dictionary, < - StringHex
-            return buf[p + 1] === LESS_THAN_SIGN ? PDFODictionary.parse(this) : PDFOString.parseStringHex(this);
-
-        case LEFT_SQUARE_BRACKET:// [ - Array
-            return PDFOArray.parse(this);
-
-        case LEFT_PARENTHESIS:// ( - StringLiteral
-            return PDFOString.parseStringLiteral(this);
-
-        case SOLIDUS:// / - Name
-            return PDFOName.parse(this);
-
-        case ASCII_R:// R - Indirect Reference
-            if (buf[p + 1] !== ASCII_R) {
-                this.p = p + 1;
-                return INDIRECT_REFERENCE_KEY;
-            };
-            break;
-
-        default:
-            break;
-    };
-
-    if (isDigit(o) || o === MINUS_SIGN || o === DOT_SIGN || o === PLUS_SIGN) return PDFONumeric.parse(this);
-
-    return PDFOBoolean.parse(this) || PDFONull.parse(this) || undefined;
-};
-
-_proto.parseIndirectObject = function () {
-    this.skipSpaces();
-    var obj = {};
-    obj.num = this.passDigits();
-    this.skipSpaces()
-    obj.gen = this.passDigits();
-    this.skipSpaces()
-
-    if (!this.skipExpectedBuf(OBJ)) {
-        throw new Error(`Could not find expect "${OBJ.toString()}" at offset ${this.p} when parsing IndirectObject!!`);
-    };
-    this.skipSpaces()
-
-    if (this.skipExpectedBuf(ENDOBJ)) {
-        obj.value = null;
-        return obj;
-    };
-
-    obj.value = this.parseObject();
-    this.skipSpaces();
-
-    // Stream Objects
-    if (this.skipExpectedBuf(STREAM)) {
-        this.passTheNext(ASCII_LF); // Ref: PDF32000_2008.pdf - 7.3.8.1General - NOTE 2
-
-        var dictionary = obj.value,
-            streamStart = this.p,
-            streamLength = this.resolve(dictionary.Length),
-            stream = this.subFrom(streamStart, streamLength);
-
-        obj.value = PDFOStream.parseIndirectObject(dictionary, stream, this);
-    };
-
-    return obj;
+    return parse(this);
 };
 
 // Parsing PDF File Structure
@@ -352,7 +257,7 @@ _proto.getIndirectObjectOffset = function (num, gen) {
 _proto.loadObject = function (num, gen) {
     var offset = this.getIndirectObjectOffset(num, gen || 0);
     if (isNaN(offset)) return undefined;
-    return this.setP(offset).parseIndirectObject().value;
+    return PDFOIndirect.parse(this.setP(offset)).value;
 };
 
 _proto.getObject = function (num, gen) {

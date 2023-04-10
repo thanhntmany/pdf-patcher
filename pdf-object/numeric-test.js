@@ -1,4 +1,5 @@
 'use strict';
+console.count(__filename)
 const PDFParser = require('../pdf-parser');
 const _class = require('./numeric')
 

@@ -1,8 +1,8 @@
 'use strict';
-const { Buffer } = require('buffer');
-const BASE_ENCODE = 'ascii',
-    BOOL_TRUE = Buffer.from('true', BASE_ENCODE),
-    BOOL_FALSE = Buffer.from('false', BASE_ENCODE);
+const {
+    BOOL_TRUE,
+    BOOL_FALSE
+} = require('./base');
 
 
 function PDFOBoolean(value) {

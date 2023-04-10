@@ -40,6 +40,10 @@ _proto.dir = function () {
     return this._;
 };
 
+_proto.prop = function (attr) {
+    return this._[attr];
+};
+
 _proto.value = function () {
     return this._;
 };

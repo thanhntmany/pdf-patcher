@@ -1,6 +1,8 @@
 'use strict';
 const { Buffer } = require('buffer');
 const {
+    BASE_ENCODE,
+
     ASCII_n, ASCII_r, ASCII_t, ASCII_b, ASCII_f,
     ASCII_LF, ASCII_CR, ASCII_HT, ASCII_BS,  
 
