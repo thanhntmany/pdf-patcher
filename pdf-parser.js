@@ -1,28 +1,17 @@
 'use strict';
 const { Buffer } = require('buffer');
 const Fs = require('fs');
-
-const BASE_ENCODE = 'ascii',
-    ASCII_LF = 10,
-    ASCII_CR = 13,
-
-    PERCENT_SIGN = Buffer.from('%', BASE_ENCODE)[0],
-
-    XREF = Buffer.from('xref', BASE_ENCODE),
-    TRAILER = Buffer.from('trailer', BASE_ENCODE),
-    STARTXREF = Buffer.from('startxref', BASE_ENCODE),
-    EOF_MARKER = Buffer.from('%%EOF', BASE_ENCODE),
-
-    INDIRECT_OBJ_INUSE = Symbol("in-use"),
-    INDIRECT_OBJ_FREE = Symbol("free")
-    ;
-
-
 const {
+    XREF, TRAILER, STARTXREF, EOF_MARKER,
+    INDIRECT_OBJ_INUSE, INDIRECT_OBJ_FREE,
+
+    PDF_HEADER, PERCENT_SIGN, ASCII_LF, ASCII_CR,
+
     isSpace, isDigit, isJsString,
     PDFODictionary,
     PDFOIndirect,
     IndirectReference,
+
     parse
 } = require('./pdf-object')();
 
@@ -156,7 +145,6 @@ _proto.parseObject = function () {
 };
 
 // Parsing PDF File Structure
-const PDF_HEADER = Buffer.from("%PDF-", BASE_ENCODE);
 _proto.parseHeader = function () {
     var header = this.setP(0).goToNext(PDF_HEADER).readLine().toString().replace(/^\s+|\s+$/g, "");
     return {

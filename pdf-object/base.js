@@ -54,6 +54,7 @@ Object.assign(exports, {
     TRUE: Buffer.from('true', BASE_ENCODE),
     FALSE: Buffer.from('false', BASE_ENCODE),
 
+    PDF_HEADER: Buffer.from("%PDF-", BASE_ENCODE),
     XREF: Buffer.from('xref', BASE_ENCODE),
     TRAILER: Buffer.from('trailer', BASE_ENCODE),
     STARTXREF: Buffer.from('startxref', BASE_ENCODE),
