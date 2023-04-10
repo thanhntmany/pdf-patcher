@@ -19,10 +19,10 @@ _proto.getFlattenKidsArray = function (pagesWalker) {
     if (pagesWalker === undefined) pagesWalker = this.walker;
 
     var out = [], item, kids = this.walker.prop("Kids"),
-        i, l = kids.value('length');
+        i, l = kids.jsValue('length');
     for (i = 0; i < l; i++) {
         item = kids.prop(i);
-        switch (item.value("Type")) {
+        switch (item.jsValue("Type")) {
             case "Pages":
                 out = out.concat(_proto.getFlattenKidsArray(item));
                 break;

@@ -307,7 +307,7 @@ Walker_proto.prop = function () {
         this.parser);
 };
 
-Walker_proto.value = function () {
+Walker_proto.jsValue = function () {
     var obj = (arguments.length > 0 ? this.prop.apply(this, arguments) : this).obj
     return obj.toJs instanceof Function ? obj.toJs() : obj;
 };

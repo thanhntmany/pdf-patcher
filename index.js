@@ -21,10 +21,8 @@ var patchingMap = {
 var tPage = kids[0];
 // tPage.incrementalUpdateContents(patchingMap);
 
-console.log("\n-- Contents ----------------");
-
-var x = tPage.walker.prop("Contents", 0, 0)
+var x = tPage.walker.jsValue("Contents", 0);
 console.log("\n-- XXXXXXXXXXXX ----------------");
-console.log(x)
+console.log("" + x)
 
 console.log("\n-- END Contents ----------------");

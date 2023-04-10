@@ -13,9 +13,6 @@ function PDFOStream(dictionary, stream, parser) {
     this.parser = parser;
 };
 const _class = PDFOStream, _proto = _class.prototype;
-_class.parseIndirectObject = function (dictionary, stream, parser) {
-    return (new this(dictionary, stream, parser)).decode().stream;
-};
 
 _proto.decodeExternalStream = function () {
     const jsValue = this.parser.jsValue.bind(this.parser);
@@ -72,11 +69,22 @@ _proto.encode = function () {
     // #TODO:
 };
 
+_proto.toJSON = function () {
+    return this.toJs();
+};
+
+_proto.toString = function (encode) {
+    return this.toJs().toString(encode);
+};
+
 _proto.toJs = function () {
-    return this;
+    return this.stream;
 };
 
 _proto.toPdf = _proto.encode;
 
 
 module.exports = exports = _class;
+_class.parseIndirectObject = function (dictionary, stream, parser) {
+    return (new this(dictionary, stream, parser)).decode().stream;
+};
