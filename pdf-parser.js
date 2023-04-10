@@ -385,7 +385,7 @@ _proto.parseArray = function () {
 
     var buf = this.buf, l = buf.length, stack = [], item;
     while (this.skipSpaces().p < l && !this.skipExpectedOct(RIGHT_SQUARE_BRACKET)) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = this.genIndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
     return stack;
@@ -396,7 +396,7 @@ _proto.parseDictionary = function () {
 
     var buf = this.buf, l = buf.length, stack = [], item;
     while (this.skipSpaces().p < l && !this.skipExpectedBuf(DOUBLE_GREATER_THAN_SIGN)) {
-        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = new IndirectReference(stack.pop(), stack.pop());
+        if ((item = this.parseObject()) === INDIRECT_REFERENCE_KEY) item = this.genIndirectReference(stack.pop(), stack.pop());
         stack.push(item);
     };
 
@@ -606,7 +606,7 @@ _proto.getRefOfLoadedObject = function (obj) {
     var key = this.getKeyOfLoadedObject(obj);
     if (!isString(key)) return key;
     var tokens = key.split("-");
-    return new IndirectReference(tokens[1], tokens[0]);
+    this.genIndirectReference(tokens.pop(), tokens.pop());
 };
 
 // Specific for decodeExternalStream
@@ -626,7 +626,12 @@ _proto.getRootWalker = function () {
 /*
  * IndirectReference
  */
-function IndirectReference(gen_number, obj_number) {
+_proto.genIndirectReference = function (gen_number, obj_number) {
+    return new IndirectReference(obj_number, gen_number)
+};
+
+
+function IndirectReference(obj_number, gen_number) {
     this.num = obj_number;
     this.gen = gen_number || 0;
 };
