@@ -38,6 +38,10 @@ _proto.toString = function () {
     return String(this._);
 };
 
+_proto.toJs = function () {
+    return this._;
+};
+
 _proto.toPdf = function () {
     // #TODO:
 };

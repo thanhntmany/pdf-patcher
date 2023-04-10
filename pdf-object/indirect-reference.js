@@ -16,6 +16,10 @@ _proto.toString = function () {
     return String(this.num) + " " + String(this.gen) + " R";
 };
 
+_proto.toJs = function () {
+    return this;
+};
+
 _proto.toPdf = function () {
     return Buffer.from([encode(String(this.num) + " " + String(this.gen) + " "), ASCII_R]);
 };

@@ -123,6 +123,10 @@ _proto.toString = function () {
     return String(this._);
 };
 
+_proto.toJs = function () {
+    return this._.toString();
+};
+
 _proto.toPdf = function () {
     // #TODO:
 };

@@ -73,6 +73,10 @@ _proto.encode = function() {
     // #TODO:
 };
 
+_proto.toJs = function () {
+    return this;
+};
+
 _proto.toPdf = _proto.encode;
 
 

@@ -19,10 +19,10 @@ _proto.getFlattenKidsArray = function (pagesWalker) {
     if (pagesWalker === undefined) pagesWalker = this.walker;
 
     var out = [], item, kids = this.walker.prop("Kids"),
-        i, l = kids.value().length;
+        i, l = kids.value('length');
     for (i = 0; i < l; i++) {
         item = kids.prop(i);
-        switch (item.prop("Type").value()) {
+        switch (item.value("Type")) {
             case "Pages":
                 out = out.concat(_proto.getFlattenKidsArray(item));
                 break;
@@ -40,7 +40,9 @@ _proto.getFlattenKidsArray = function (pagesWalker) {
 };
 
 _proto.getArrayOfPage = function () {
-    return this.getFlattenKidsArray().map(pageWalker => new PDFPageHandler(pageWalker, this.pdf))
+    return this
+        .getFlattenKidsArray()
+        .map(pageWalker => new PDFPageHandler(pageWalker, this.pdf))
 };
 
 module.exports = exports = PDFPagesHandler;
