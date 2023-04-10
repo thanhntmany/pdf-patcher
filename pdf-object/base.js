@@ -103,6 +103,10 @@ exports.isOctalDigit = function (o) {
     return DIGIT_0 <= o && o <= DIGIT_7;
 };
 
+exports.encode = function (jsString) {
+    return Buffer.from(jsString, BASE_ENCODE)
+};
+
 // check is Js string
 exports.isJsString = function (o) {
     return typeof o === 'string' || o instanceof String

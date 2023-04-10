@@ -24,7 +24,8 @@ function loadEnv() {
         PDFODictionary = require('./dictionary'),
         PDFOStream = require('./stream'),
         PDFOIndirect = require('./indirect'),
-        PDFONull = require('./null');
+        PDFONull = require('./null'),
+        IndirectReference = require('./indirect-reference');
 
     const parse = function (parser) {
         var p = parser.skipSpaces().p, buf = parser.buf, o = buf[p];
@@ -71,6 +72,8 @@ function loadEnv() {
             PDFOStream: PDFOStream,
             PDFOIndirect: PDFOIndirect,
             PDFONull: PDFONull,
+
+            IndirectReference: IndirectReference,
             parse: parse
         }
     );

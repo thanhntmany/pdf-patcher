@@ -50,4 +50,3 @@ for (i = 0; i < 1; i++) {
     console.log("----------------------------")
     if (s) console.dir(s, { depth: null })
 };
-

@@ -22,6 +22,7 @@ const {
     isSpace, isDigit, isJsString,
     PDFODictionary,
     PDFOIndirect,
+    IndirectReference,
     parse
 } = require('./pdf-object')();
 
@@ -33,7 +34,7 @@ function PDFParser(buffer) {
     this.buf = buffer;
     this.p = 0;// pointer
 
-    this.xref = this.parseTrailer();
+    this.trailer = this.parseTrailer();
     this.cache = {};
 };
 
@@ -204,25 +205,29 @@ _proto.parseTrailerObj = function () {
     return PDFODictionary.parse(this.passTheNext(TRAILER).skipSpaces());
 };
 
-_proto.parseXref = function () {
-    // This.p shall be pointing to xref
-    return {
-        xrefTable: this.parseXrefTable(),
-        trailerObj: this.parseTrailerObj()
-    }
-};
-
 // reverse lookup from this.p
 _proto.parseStartXref = function () {
     return parseInt(this.goToLast(EOF_MARKER).goToLast(STARTXREF).goToNextLine().readLine().toString());
 };
 
-_proto.parseTrailer = function () {
-    return this.setP(this.setP(-1).parseStartXref()).parseXref();
+// @param p: shall point to the %%EOF of target trailer
+_proto.parseTrailer = function (p) {
+    this.setP(this.setP(p || -1).parseStartXref());
+    var o = {
+        xrefTable: this.parseXrefTable(),
+        trailerObj: this.parseTrailerObj()
+    };
+
+    console.dir(o, {depth: null})
+    return o
 };
 
 
 // Work with indirect objects
+_proto.genIndirectReference = function (gen_number, obj_number) {
+    return new IndirectReference(obj_number, gen_number)
+};
+
 _proto.resolve = function (obj) {
     return obj instanceof IndirectReference ? this.getObject(obj.num, obj.gen) : obj;
 };
@@ -241,7 +246,7 @@ _proto.getIndirectObjectOffset = function (num, gen) {
     if (isNaN(gen)) gen = 0;
     var key = this.genXrefObjectKey(num, gen);
 
-    var xref = this.xref;
+    var xref = this.trailer;
 
     if (xref.xrefTable.hasOwnProperty(key)) {
         var entry = xref.xrefTable[key];
@@ -291,26 +296,9 @@ _proto.genWalker = function (obj) {
 };
 
 _proto.getRootWalker = function () {
-    return this.genWalker(this.resolve(this.xref.trailerObj.Root));
+    return this.genWalker(this.resolve(this.trailer.trailerObj.Root));
 };
 
-
-/*
- * IndirectReference
- */
-_proto.genIndirectReference = function (gen_number, obj_number) {
-    return new IndirectReference(obj_number, gen_number)
-};
-
-
-function IndirectReference(obj_number, gen_number) {
-    this.num = obj_number;
-    this.gen = gen_number || 0;
-};
-
-IndirectReference.prototype.toString = function () {
-    return String(this.num) + " " + String(this.gen) + " R";
-};
 
 /*
  * Walker
