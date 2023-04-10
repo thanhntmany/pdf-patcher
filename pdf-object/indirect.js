@@ -44,7 +44,7 @@ _class.parse = function (parser) {
         obj.value = PDFOStream.parseIndirectObject(dictionary, stream, parser);
     };
 
-    return new this(obj);
+    return obj;
 };
 
 _proto.dir = function () {

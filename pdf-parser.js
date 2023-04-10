@@ -51,9 +51,9 @@ _proto.subFrom = function (start, length) {
     return this.buf.subarray(start, start + length);
 };
 
-_proto.logHere = function () {
+_proto.logHere = function (l) {
     console.log("Current p: ", this.p)
-    console.log(this.subFrom(this.p, 100).toString())
+    console.log(this.subFrom(this.p, l || 100).toString())
 };
 
 _proto.indexOfNextLine = function (p) {
@@ -144,6 +144,67 @@ _proto.parseObject = function () {
     return parse(this);
 };
 
+_proto.loadObject = function (num, gen) {
+    var offset = this.getIndirectObjectOffset(num, gen || 0);
+    if (isNaN(offset)) return undefined;
+    return PDFOIndirect.parse(this.setP(offset).skipSpaces()).value;
+};
+
+_proto.getObject = function (num, gen) {
+    if (isNaN(gen)) gen = 0;
+    var cache = this.cache, key = this.genXrefObjectKey(num, gen);
+    return cache.hasOwnProperty(key) ? cache[key] : cache[key] = this.loadObject(num, gen);
+};
+
+// Might return wrong value with the cases of primitive-types obj.
+_proto.getKeyOfLoadedObject = function (obj) {
+    var key, cache = this.cache;
+    for (key in this.cache) if (cache[key] === obj) return key;
+    return undefined;
+};
+
+// Work with indirect objects
+_proto.genIndirectReference = function (gen_number, obj_number) {
+    return new IndirectReference(obj_number, gen_number)
+};
+
+// Might return wrong value with the cases of primitive-types obj.
+_proto.getRefOfLoadedObject = function (obj) {
+    var key = this.getKeyOfLoadedObject(obj);
+    if (!isJsString(key)) return key;
+    var tokens = key.split("-");
+    return this.genIndirectReference(tokens.pop(), tokens.pop());
+};
+
+_proto.resolve = function (obj) {
+    return obj instanceof IndirectReference ? this.getObject(obj.num, obj.gen) : obj;
+};
+
+_proto.resolveIn = function (obj, ...subs) {
+    var sub; while (subs.length > 0) {
+        sub = subs.shift();
+        return this.resolve(obj.prop instanceof Function ? obj.prop(sub) : obj = obj[sub]);
+    };
+    return obj;
+};
+
+_proto.getIndirectObjectOffset = function (num, gen) {
+    if (isNaN(gen)) gen = 0;
+    var key = this.genXrefObjectKey(num, gen);
+
+    var xref = this.trailer;
+
+    if (xref.xrefTable.hasOwnProperty(key)) {
+        var entry = xref.xrefTable[key];
+        if (entry.status === INDIRECT_OBJ_FREE) return null;
+
+        // Assume: entry.status === INDIRECT_OBJ_INUSE
+        return entry.p
+    };
+
+    // #TODO: nested case, xrefstrm
+};
+
 // Parsing PDF File Structure
 _proto.parseHeader = function () {
     var header = this.setP(0).goToNext(PDF_HEADER).readLine().toString().replace(/^\s+|\s+$/g, "");
@@ -210,68 +271,6 @@ _proto.parseTrailer = function (p) {
         xrefTable: this.parseXrefTable(),
         trailerObj: this.parseTrailerObj()
     }
-};
-
-
-// Work with indirect objects
-_proto.genIndirectReference = function (gen_number, obj_number) {
-    return new IndirectReference(obj_number, gen_number)
-};
-
-_proto.resolve = function (obj) {
-    return obj instanceof IndirectReference ? this.getObject(obj.num, obj.gen) : obj;
-};
-
-_proto.resolveIn = function (obj, ...subs) {
-    var sub; while (subs.length > 0) {
-        sub = subs.shift();
-        return this.resolve(obj.prop instanceof Function ? obj.prop(sub) : obj = obj[sub]);
-    };
-    return obj;
-};
-
-_proto.getIndirectObjectOffset = function (num, gen) {
-    if (isNaN(gen)) gen = 0;
-    var key = this.genXrefObjectKey(num, gen);
-
-    var xref = this.trailer;
-
-    if (xref.xrefTable.hasOwnProperty(key)) {
-        var entry = xref.xrefTable[key];
-        if (entry.status === INDIRECT_OBJ_FREE) return null;
-
-        // Assume: entry.status === INDIRECT_OBJ_INUSE
-        return entry.p
-    };
-
-    // #TODO: nested case, xrefstrm
-};
-
-_proto.loadObject = function (num, gen) {
-    var offset = this.getIndirectObjectOffset(num, gen || 0);
-    if (isNaN(offset)) return undefined;
-    return PDFOIndirect.parse(this.setP(offset).skipSpaces()).value;
-};
-
-_proto.getObject = function (num, gen) {
-    if (isNaN(gen)) gen = 0;
-    var cache = this.cache, key = this.genXrefObjectKey(num, gen);
-    return cache.hasOwnProperty(key) ? cache[key] : cache[key] = this.loadObject(num, gen);
-};
-
-// Might return wrong value with the cases of primitive-types obj.
-_proto.getKeyOfLoadedObject = function (obj) {
-    var key, cache = this.cache;
-    for (key in this.cache) if (cache[key] === obj) return key;
-    return undefined;
-};
-
-// Might return wrong value with the cases of primitive-types obj.
-_proto.getRefOfLoadedObject = function (obj) {
-    var key = this.getKeyOfLoadedObject(obj);
-    if (!isJsString(key)) return key;
-    var tokens = key.split("-");
-    return this.genIndirectReference(tokens.pop(), tokens.pop());
 };
 
 // Specific for decodeExternalStream

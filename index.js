@@ -11,8 +11,6 @@ var pages = pdf.getPages();
 //     console.log(kid)
 // };
 
-console.dir(pdf.parser.cache, {depth: null});
-
 // var patchingMap = {
 //     FULL_NAME: "XxXxXxX"
 // };
