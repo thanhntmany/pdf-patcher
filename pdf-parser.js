@@ -7,7 +7,7 @@ const {
 
     PDF_HEADER, PERCENT_SIGN, ASCII_LF, ASCII_CR,
 
-    isSpace, isDigit, isJsString,
+    isSpace, isDigit, isJsString, isJsPrimitive,
     PDFODictionary,
     PDFOIndirect,
     IndirectReference,
@@ -188,6 +188,11 @@ _proto.resolveIn = function (obj, ...subs) {
     return obj;
 };
 
+_proto.jsValue = function () {
+    var obj = this.resolveIn.apply(this, Array.prototype.slice.call(arguments));
+    return !isJsPrimitive(obj) && obj.toJs instanceof Function ? obj.toJs() : obj;
+};
+
 _proto.getIndirectObjectOffset = function (num, gen) {
     if (isNaN(gen)) gen = 0;
     var key = this.genXrefObjectKey(num, gen);
@@ -290,16 +295,16 @@ _proto.getRootWalker = function () {
 /*
  * Walker
  */
-function Walker(obj, root) {
+function Walker(obj, parser) {
     this.obj = obj;
-    this.root = root;
+    this.parser = parser;
 };
 const Walker_proto = Walker.prototype;
 
 Walker_proto.prop = function () {
     return new this.constructor(
-        this.root.resolveIn.apply(this.root, [this.obj].concat(Array.prototype.slice.call(arguments))),
-        this.root);
+        this.parser.resolveIn.apply(this.parser, [this.obj].concat(Array.prototype.slice.call(arguments))),
+        this.parser);
 };
 
 Walker_proto.value = function () {

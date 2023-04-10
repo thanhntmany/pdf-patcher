@@ -36,7 +36,7 @@ _class.parse = function (parser) {
 
         var dictionary = obj.value,
             streamStart = parser.p,
-            streamLength = parser.resolve(dictionary.Length).value(),
+            streamLength = parser.jsValue(dictionary, "Length"),
             stream = parser.subFrom(streamStart, streamLength);
 
         obj.value = PDFOStream.parseIndirectObject(dictionary, stream, parser);

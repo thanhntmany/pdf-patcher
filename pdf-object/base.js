@@ -122,7 +122,12 @@ exports.isOctalDigit = function (o) {
 
 // check is Js string
 exports.isJsString = function (o) {
-    return typeof o === 'string' || o instanceof String
+    return typeof o === 'string' || o instanceof String;
 };
+
+exports.isJsPrimitive = function (o) {
+    return o !== Object(o);
+};
+
 
 module.exports = exports

@@ -6,8 +6,8 @@ const {
 } = require('./base');
 
 
-function PDFOArray(ArrayLike) {
-    this._ = ArrayLike;
+function PDFOArray(jsArrayLike) {
+    this._ = jsArrayLike;
 };
 const _class = PDFOArray, _proto = _class.prototype;
 

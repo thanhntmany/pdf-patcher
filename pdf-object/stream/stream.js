@@ -1,6 +1,5 @@
 'use strict';
-const Filter = require("./filter");
-
+const PDFFilter = require("./filter");
 
 /*
  * PDFOStream
@@ -18,14 +17,12 @@ _class.parseIndirectObject = function (dictionary, stream, parser) {
     return (new this(dictionary, stream, parser)).decode().stream;
 };
 
-_proto.resolve = function (obj) {
-    return this.parser.resolve(obj);
-};
-
 _proto.decodeExternalStream = function () {
-    if (!this.dictionary.hasOwnProperty('F')) return this;
+    const jsValue = this.parser.jsValue.bind(this.parser);
 
-    var dict = this.dictionary;
+    var dict = this.dictionary.toJs();
+    if (!dict.hasOwnProperty('F')) return this;
+
     this.stream = this.parser.loadFileSpecification(dict.F);
     dict.Length = this.stream.length;// The length of loaded stream is more trustworthy than "DL"
     dict.Filter = dict.FFilter;
@@ -40,22 +37,24 @@ _proto.decodeExternalStream = function () {
 };
 
 _proto.decode = function () {
+    const jsValue = this.parser.jsValue.bind(this.parser);
+
     // Ref: PDF32000_2008.pdf - 7.3.8.2 Stream Extent - Table 5
-    if (this.dictionary.Length.value() === 0) return this.decodeExternalStream()
+    if (jsValue(this.dictionary, "Length") === 0) return this.decodeExternalStream()
 
-    if (!this.dictionary.hasOwnProperty('Filter')) return this;
+    var Filter = jsValue(this.dictionary, "Filter");
+    if (!Filter) return this;
 
-    var Filter = this.dictionary.Filter;
     if (!Array.isArray(Filter)) Filter = [Filter];
 
-    var DecodeParms = this.dictionary.DecodeParms;
+    var DecodeParms = jsValue(this.dictionary, "DecodeParms");
     if (!Array.isArray(DecodeParms)) DecodeParms = [DecodeParms];
 
     var filterName, DecodeParm;
-    while ((filterName = Filter.shift()) !== undefined) {
+    while ((filterName = jsValue(Filter.shift())) !== undefined) {
         DecodeParm = DecodeParms.shift();
-        this.stream = Filter(filterName).decode(this.stream, DecodeParm, this.parser);
-        this.stream.Length = this.stream.length;
+        this.stream = PDFFilter(filterName).decode(this.stream, DecodeParm, this.parser);
+        this.dictionary.Length = this.stream.length;
     };
 
     if (Filter.length === 0) {
@@ -69,7 +68,7 @@ _proto.decode = function () {
     return this;
 };
 
-_proto.encode = function() {
+_proto.encode = function () {
     // #TODO:
 };
 
