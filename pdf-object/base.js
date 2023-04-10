@@ -3,6 +3,16 @@ const { Buffer } = require('buffer');
 
 
 const BASE_ENCODE = 'ascii';
+function encode(jsString) {
+    return Buffer.from(jsString, BASE_ENCODE)
+};
+exports.encode = encode;
+
+function encodeOct(jsString) {
+    return Buffer.from(jsString, BASE_ENCODE)[0]
+};
+exports.encodeOct = encodeOct;
+
 Object.assign(exports, {
     BASE_ENCODE: BASE_ENCODE,
 
@@ -14,62 +24,62 @@ Object.assign(exports, {
     ASCII_BS: 8,
     ASCII_SPACE: 32,
 
-    ASCII_n: Buffer.from('n', BASE_ENCODE)[0],
-    ASCII_r: Buffer.from('r', BASE_ENCODE)[0],
-    ASCII_t: Buffer.from('t', BASE_ENCODE)[0],
-    ASCII_b: Buffer.from('b', BASE_ENCODE)[0],
-    ASCII_f: Buffer.from('f', BASE_ENCODE)[0],
-    ASCII_R: Buffer.from('R', BASE_ENCODE)[0],
+    ASCII_n: encodeOct('n'),
+    ASCII_r: encodeOct('r'),
+    ASCII_t: encodeOct('t'),
+    ASCII_b: encodeOct('b'),
+    ASCII_f: encodeOct('f'),
+    ASCII_R: encodeOct('R'),
 
-    PLUS_SIGN: Buffer.from('+', BASE_ENCODE)[0],
-    MINUS_SIGN: Buffer.from('-', BASE_ENCODE)[0],
-    DOT_SIGN: Buffer.from('.', BASE_ENCODE)[0],
-    DIGIT_0: Buffer.from('0', BASE_ENCODE)[0],
-    DIGIT_7: Buffer.from('7', BASE_ENCODE)[0],
-    DIGIT_9: Buffer.from('9', BASE_ENCODE)[0],
+    PLUS_SIGN: encodeOct('+'),
+    MINUS_SIGN: encodeOct('-'),
+    DOT_SIGN: encodeOct('.'),
+    DIGIT_0: encodeOct('0'),
+    DIGIT_7: encodeOct('7'),
+    DIGIT_9: encodeOct('9'),
 
-    HEX_0: Buffer.from('0', BASE_ENCODE)[0],
-    HEX_9: Buffer.from('9', BASE_ENCODE)[0],
-    HEX_A: Buffer.from('A', BASE_ENCODE)[0],
-    HEX_Z: Buffer.from('Z', BASE_ENCODE)[0],
-    HEX_a: Buffer.from('a', BASE_ENCODE)[0],
-    HEX_z: Buffer.from('z', BASE_ENCODE)[0],
+    HEX_0: encodeOct('0'),
+    HEX_9: encodeOct('9'),
+    HEX_A: encodeOct('A'),
+    HEX_Z: encodeOct('Z'),
+    HEX_a: encodeOct('a'),
+    HEX_z: encodeOct('z'),
 
-    LEFT_PARENTHESIS: Buffer.from('(', BASE_ENCODE)[0],
-    RIGHT_PARENTHESIS: Buffer.from(')', BASE_ENCODE)[0],
-    LESS_THAN_SIGN: Buffer.from('<', BASE_ENCODE)[0],
-    GREATER_THAN_SIGN: Buffer.from('>', BASE_ENCODE)[0],
-    LEFT_SQUARE_BRACKET: Buffer.from('[', BASE_ENCODE)[0],
-    RIGHT_SQUARE_BRACKET: Buffer.from(']', BASE_ENCODE)[0],
-    LEFT_CURLY_BRACKET: Buffer.from('{', BASE_ENCODE)[0],
-    RIGHT_CURLY_BRACKET: Buffer.from('}', BASE_ENCODE)[0],
-    SOLIDUS: Buffer.from('/', BASE_ENCODE)[0],
-    REVERSE_SOLIDUS: Buffer.from('\\', BASE_ENCODE)[0],
-    PERCENT_SIGN: Buffer.from('%', BASE_ENCODE)[0],
-    NUMBER_SIGN: Buffer.from('#', BASE_ENCODE)[0],
-    DOUBLE_LESS_THAN_SIGN: Buffer.from('<<', BASE_ENCODE),
-    DOUBLE_GREATER_THAN_SIGN: Buffer.from('>>', BASE_ENCODE),
+    LEFT_PARENTHESIS: encodeOct('('),
+    RIGHT_PARENTHESIS: encodeOct(')'),
+    LESS_THAN_SIGN: encodeOct('<'),
+    GREATER_THAN_SIGN: encodeOct('>'),
+    LEFT_SQUARE_BRACKET: encodeOct('['),
+    RIGHT_SQUARE_BRACKET: encodeOct(']'),
+    LEFT_CURLY_BRACKET: encodeOct('{'),
+    RIGHT_CURLY_BRACKET: encodeOct('}'),
+    SOLIDUS: encodeOct('/'),
+    REVERSE_SOLIDUS: encodeOct('\\'),
+    PERCENT_SIGN: encodeOct('%'),
+    NUMBER_SIGN: encodeOct('#'),
+    DOUBLE_LESS_THAN_SIGN: encode('<<'),
+    DOUBLE_GREATER_THAN_SIGN: encode('>>'),
 
-    NULL: Buffer.from('null', BASE_ENCODE),
-    TRUE: Buffer.from('true', BASE_ENCODE),
-    FALSE: Buffer.from('false', BASE_ENCODE),
+    NULL: encode('null'),
+    TRUE: encode('true'),
+    FALSE: encode('false'),
 
-    PDF_HEADER: Buffer.from("%PDF-", BASE_ENCODE),
-    XREF: Buffer.from('xref', BASE_ENCODE),
-    TRAILER: Buffer.from('trailer', BASE_ENCODE),
-    STARTXREF: Buffer.from('startxref', BASE_ENCODE),
-    EOF_MARKER: Buffer.from('%%EOF', BASE_ENCODE),
-    BOOL_TRUE: Buffer.from('true', BASE_ENCODE),
-    BOOL_FALSE: Buffer.from('false', BASE_ENCODE),
+    PDF_HEADER: encode("%PDF-"),
+    XREF: encode('xref'),
+    TRAILER: encode('trailer'),
+    STARTXREF: encode('startxref'),
+    EOF_MARKER: encode('%%EOF'),
+    BOOL_TRUE: encode('true'),
+    BOOL_FALSE: encode('false'),
 
     INDIRECT_REFERENCE_KEY: Symbol("R"),
     INDIRECT_OBJ_INUSE: Symbol("in-use"),
     INDIRECT_OBJ_FREE: Symbol("free"),
 
-    OBJ: Buffer.from('obj', BASE_ENCODE),
-    ENDOBJ: Buffer.from('\nendobj', BASE_ENCODE),
-    STREAM: Buffer.from('stream', BASE_ENCODE),
-    ENDSTREAM: Buffer.from('\nendstream', BASE_ENCODE)
+    OBJ: encode('obj'),
+    ENDOBJ: encode('\nendobj'),
+    STREAM: encode('stream'),
+    ENDSTREAM: encode('\nendstream')
 
 });
 
@@ -84,7 +94,7 @@ const {
 
     DIGIT_0, DIGIT_7, DIGIT_9,
 
-    HEX_0, HEX_9, HEX_A, HEX_Z, HEX_a, HEX_z,
+    HEX_0, HEX_9, HEX_A, HEX_Z, HEX_a, HEX_z
 
 } = exports;
 
@@ -108,10 +118,6 @@ exports.isHexDigit = function (o) {
 
 exports.isOctalDigit = function (o) {
     return DIGIT_0 <= o && o <= DIGIT_7;
-};
-
-exports.encode = function (jsString) {
-    return Buffer.from(jsString, BASE_ENCODE)
 };
 
 // check is Js string
