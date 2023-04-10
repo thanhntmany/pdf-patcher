@@ -1,7 +1,5 @@
 'use strict';
-const {
-    OBJ, ENDOBJ, STREAM
-} = require('./base');
+const { OBJ, ENDOBJ, STREAM, ASCII_LF } = require('./base');
 const PDFONull = require('./null');
 const PDFOStream = require('./stream');
 

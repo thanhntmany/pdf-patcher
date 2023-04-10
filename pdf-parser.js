@@ -183,7 +183,7 @@ _proto.resolve = function (obj) {
 _proto.resolveIn = function (obj, ...subs) {
     var sub; while (subs.length > 0) {
         sub = subs.shift();
-        return this.resolve(obj.prop instanceof Function ? obj.prop(sub) : obj = obj[sub]);
+        obj = this.resolve(obj.prop instanceof Function ? obj.prop(sub) : obj[sub]);
     };
     return obj;
 };

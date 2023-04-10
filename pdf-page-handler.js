@@ -16,12 +16,13 @@ _proto.incrementalUpdateContentStream = function (contentStreamObj, patchingMap)
 
 _proto.incrementalUpdateContents = function (patchingMap) {
 
-    console.log("\n-- Resources ----------------");
-    this.walker.prop("Resources").dir();
+    // console.log("\n-- Resources ----------------");
+    // this.walker.prop("Resources").dir();
 
     console.log("\n-- Contents ----------------");
-    this.walker.prop("Contents").dir();
+    console.log(this.walker.prop("Contents", 0));
 
+    console.log("\n-- END Contents ----------------");
     // console.log(this.walker.prop("Contents", 0).value().toString());
     return this;
 };

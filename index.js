@@ -10,15 +10,21 @@ var pdf = PDFHandler.fromFile('./template/template_full.pdf');
 var pages = pdf.getPages();
 var kids = pages.getArrayOfPage(), kid;
 
-console.log(kids);
-
 // for (kid of kids) {
 //     console.log(kid)
 // };
 
-// var patchingMap = {
-//     FULL_NAME: "XxXxXxX"
-// };
+var patchingMap = {
+    FULL_NAME: "XxXxXxX"
+};
 
-// var tPage = kids[0];
+var tPage = kids[0];
 // tPage.incrementalUpdateContents(patchingMap);
+
+console.log("\n-- Contents ----------------");
+
+var x = tPage.walker.prop("Contents", 0, 0)
+console.log("\n-- XXXXXXXXXXXX ----------------");
+console.log(x)
+
+console.log("\n-- END Contents ----------------");
