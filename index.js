@@ -17,5 +17,5 @@ var patchingMap = {
     FULL_NAME: "XxXxXxX"
 };
 
-var tPage = kids[1];
-tPage.patchContent(patchingMap)
+var tPage = kids[0];
+tPage.incrementalUpdateContents(patchingMap);
